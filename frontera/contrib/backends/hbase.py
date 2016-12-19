@@ -399,6 +399,7 @@ class HBaseBackend(DistributedBackend):
         settings = manager.settings
         port = settings.get('HBASE_THRIFT_PORT')
         hosts = settings.get('HBASE_THRIFT_HOST')
+        timeout = settings.get('HBASE_TIMEOUT')
         namespace = settings.get('HBASE_NAMESPACE')
         self._min_requests = settings.get('BC_MIN_REQUESTS')
         self._min_hosts = settings.get('BC_MIN_HOSTS')
@@ -410,7 +411,8 @@ class HBaseBackend(DistributedBackend):
             'host': host,
             'port': int(port),
             'table_prefix': namespace,
-            'table_prefix_separator': ':'
+            'table_prefix_separator': ':',
+            'timeout': timeout
         }
         if settings.get('HBASE_USE_FRAMED_COMPACT'):
             kwargs.update({
