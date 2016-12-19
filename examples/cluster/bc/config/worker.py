@@ -5,5 +5,6 @@ from .common import *
 BACKEND = 'frontera.contrib.backends.hbase.HBaseBackend'
 HBASE_DROP_ALL_TABLES = True
 HBASE_TIMEOUT = 30000
+HBASE_THRIFT_HOST = "10.2.0.17"
 MAX_NEXT_REQUESTS = 2048
 NEW_BATCH_DELAY = 3.0
