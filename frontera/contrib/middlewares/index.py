@@ -63,6 +63,15 @@ class ElasticSearchIndexMiddleware(BaseIndexMiddleware):
 
         connections.create_connection(hosts=[manager.settings.get('ELASTICSEARCH_SERVER', "localhost")])
         NewsArticle.init()
+    def _delete_fields(self, obj):
+        del obj.meta[b"text"]
+        del obj.meta[b"title"]
+        try:
+            del obj.meta[b"published_date"]
+        except:
+            pass
+        del obj.meta[b"crawled_date"]
+        
 
     def _add_to_index(self, obj):
         id = str(obj.meta[b'fingerprint'])
@@ -79,4 +88,5 @@ class ElasticSearchIndexMiddleware(BaseIndexMiddleware):
             article.save()
         except:
             pass
+        self._delete_fields(obj)
         return obj
