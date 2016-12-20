@@ -111,7 +111,7 @@ class EntityDetailsExtractMiddleware(BaseExtractMiddleware):
 
     component_name = 'Entity Details Extract Middleware'
 
-    def _extract_entity_names(t):
+    def _extract_entity_names(self, t):
         entity_names = []
 
         if hasattr(t, 'label') and t.label:
