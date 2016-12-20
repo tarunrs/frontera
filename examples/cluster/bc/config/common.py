@@ -10,6 +10,7 @@ MIDDLEWARES.extend([
     'frontera.contrib.middlewares.domain.DomainMiddleware',
     'frontera.contrib.middlewares.fingerprint.DomainFingerprintMiddleware',
     'frontera.contrib.middlewares.extract.NewsDetailsExtractMiddleware',
+    'frontera.contrib.middlewares.extract.EntityDetailsExtractMiddleware',
     'frontera.contrib.middlewares.index.ElasticSearchIndexMiddleware'
 ])
 
