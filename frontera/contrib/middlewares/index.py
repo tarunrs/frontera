@@ -10,6 +10,7 @@ class NewsArticle(DocType):
     url = Text(index='not_analyzed')
     published_date = Date()
     crawled_date = Date()
+    named_entities = Text(index='not_analyzed')
 
     class Meta:
         index = 'news'
@@ -51,11 +52,6 @@ class BaseIndexMiddleware(Middleware):
 
 
 class ElasticSearchIndexMiddleware(BaseIndexMiddleware):
-    """
-    This :class:`Middleware <frontera.core.components.Middleware>` will add a 'text', 'description', 
-    'published_date', 'crawled_date' field for every
-    :attr:`Response.meta <frontera.core.models.Response.meta>` if is activated.
-    """
 
     component_name = 'ElasticSearch Index Middleware'
 
@@ -63,6 +59,7 @@ class ElasticSearchIndexMiddleware(BaseIndexMiddleware):
 
         connections.create_connection(hosts=[manager.settings.get('ELASTICSEARCH_SERVER', "localhost")])
         NewsArticle.init()
+
     def _delete_fields(self, obj):
         del obj.meta[b"text"]
         del obj.meta[b"title"]
@@ -71,7 +68,7 @@ class ElasticSearchIndexMiddleware(BaseIndexMiddleware):
         except:
             pass
         del obj.meta[b"crawled_date"]
-        
+        del obj.meta[b"named_entities"]
 
     def _add_to_index(self, obj):
         id = str(obj.meta[b'fingerprint'])
@@ -88,5 +85,8 @@ class ElasticSearchIndexMiddleware(BaseIndexMiddleware):
             article.save()
         except:
             pass
-        self._delete_fields(obj)
+        try:
+            self._delete_fields(obj)
+        except:
+            pass
         return obj
