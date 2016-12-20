@@ -81,6 +81,7 @@ class ElasticSearchIndexMiddleware(BaseIndexMiddleware):
         except:
             pass
         article.crawled_date = obj.meta[b"crawled_date"]
+        article.named_entities = obj.meta[b"named_entities"]
         try:
             article.save()
         except:
