@@ -11,6 +11,7 @@ class NewsArticle(DocType):
     published_date = Date()
     crawled_date = Date()
     named_entities = Text(index='not_analyzed')
+    netloc = Text(index='not_analyzed')
 
     class Meta:
         index = 'news'
@@ -82,6 +83,7 @@ class ElasticSearchIndexMiddleware(BaseIndexMiddleware):
             pass
         article.crawled_date = obj.meta[b"crawled_date"]
         article.named_entities = obj.meta[b"named_entities"]
+        article.netloc = obj.meta[b"domain"][b'netloc']
         try:
             article.save()
         except:
