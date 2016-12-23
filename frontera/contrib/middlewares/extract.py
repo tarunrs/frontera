@@ -5,7 +5,7 @@ import articleDateExtractor
 from bs4 import BeautifulSoup
 import datetime
 import nltk
-import newspaper
+from newspaper import Article
 
 class BaseExtractMiddleware(Middleware):
     component_name = 'Base Extract Middleware'
