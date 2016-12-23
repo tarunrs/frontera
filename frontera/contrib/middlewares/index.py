@@ -12,6 +12,9 @@ class NewsArticle(DocType):
     crawled_date = Date()
     named_entities = Text(index='not_analyzed')
     netloc = Text(index='not_analyzed')
+    authors = Text(index='not_analyzed')
+    image = Text(index='not_analyzed')
+
 
     class Meta:
         index = 'news'
@@ -69,7 +72,18 @@ class ElasticSearchIndexMiddleware(BaseIndexMiddleware):
         except:
             pass
         del obj.meta[b"crawled_date"]
-        del obj.meta[b"named_entities"]
+        try:
+            del obj.meta[b"named_entities"]
+        except:
+            pass
+        try:
+            del obj.meta[b"authors"]
+        except:
+            pass
+        try:
+            del obj.meta[b"image"]
+        except:
+            pass
 
     def _add_to_index(self, obj):
         id = str(obj.meta[b'fingerprint'])
@@ -84,6 +98,9 @@ class ElasticSearchIndexMiddleware(BaseIndexMiddleware):
         article.crawled_date = obj.meta[b"crawled_date"]
         article.named_entities = obj.meta[b"named_entities"]
         article.netloc = obj.meta[b"domain"][b'netloc']
+        article.authors = obj.meta[b"authors"]
+        article.image = obj.meta[b"image"]
+
         try:
             article.save()
         except:

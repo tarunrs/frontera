@@ -1,12 +1,11 @@
 from __future__ import absolute_import
 from frontera.core.components import Middleware
 from boilerpipe.extract import Extractor
-import datefinder
 import articleDateExtractor
 from bs4 import BeautifulSoup
 import datetime
 import nltk
-
+import newspaper
 
 class BaseExtractMiddleware(Middleware):
     component_name = 'Base Extract Middleware'
@@ -49,56 +48,20 @@ class NewsDetailsExtractMiddleware(BaseExtractMiddleware):
 
     component_name = 'News Details Extract Middleware'
 
-    def get_title(self, doc):
-        title = None
-        try:
-            title = doc.find("title").get_text()
-        except:
-            title = None
-        return title
-
-    def find_in_list_of_attribute_type(self, doc, tag, attributes):
-        date = None
-        for attribute in attributes:
-            for a_type in attributes[attribute]:
-                temp = doc.findAll(tag, {attribute: a_type})
-                if len(temp) > 0:
-                    try:
-                        date = temp[0]["content"]
-                        if len(date) > 0:
-                            return date
-                    except:
-                        continue
-        return date
-
-    def get_published_date(self, doc):
-        tag = "meta"
-        match = None
-        attributes = {
-            "property": ["article:published_time", "article:modified_time",
-                         "og:article:published_time", "og:article:modified_time"],
-            "itemprop": ["datePublished", "dateModified"],
-            "http-equiv": ["Last-Modified"]
-        }
-        try:
-            temp = self.find_in_list_of_attribute_type(doc, tag, attributes)
-            matches = datefinder.find_dates(temp)
-            for match in matches:
-                return match
-        except:
-            match = None
-        return match
-
     def _add_details(self, obj):
-        extractor = Extractor(extractor='ArticleExtractor', html=obj.body)
-        obj.meta[b"text"] = extractor.getText()
-        doc = BeautifulSoup(obj.body)
-        obj.meta[b"title"] = self.get_title(doc)
-        obj.meta[b"published_date"] = self.get_published_date(doc)
+        a = Article(obj.url)
+        a.download(html=obj.body)
+        a.parse()
+        obj.meta[b"text"] = a.text
+        obj.meta[b"title"] = a.title
+        obj.meta[b"published_date"] = a.publish_date
         if obj.meta[b"published_date"] is None:
             obj.meta[b"published_date"] = articleDateExtractor.extractArticlePublishedDate(
                 obj.url, obj.body)
         obj.meta[b"crawled_date"] = datetime.datetime.now()
+        obj.meta[b"image"] = a.top_image
+        obj.meta[b"authors"] = a.authors
+
         return obj
 
 
