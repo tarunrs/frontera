@@ -55,6 +55,7 @@ class NewsDetailsExtractMiddleware(BaseExtractMiddleware):
         a.parse()
         obj.meta[b"text"] = a.text
         obj.meta[b"title"] = a.title
+        obj.meta[b"html"] = a.html
         obj.meta[b"published_date"] = a.publish_date
         if obj.meta[b"published_date"] is None:
             obj.meta[b"published_date"] = articleDateExtractor.extractArticlePublishedDate(

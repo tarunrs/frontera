@@ -67,6 +67,7 @@ class ElasticSearchIndexMiddleware(BaseIndexMiddleware):
     def _delete_fields(self, obj):
         del obj.meta[b"text"]
         del obj.meta[b"title"]
+        del obj.meta[b"html"]
         try:
             del obj.meta[b"published_date"]
         except:
