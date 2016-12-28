@@ -67,7 +67,7 @@ class NewsDetailsExtractMiddleware(BaseExtractMiddleware):
         return obj
 
     def _add_details(self, obj):
-        return self.add_details(self, obj, obj.body)
+        return self.add_details(obj, obj.body)
 
 
 class EntityDetailsExtractMiddleware(BaseExtractMiddleware):
