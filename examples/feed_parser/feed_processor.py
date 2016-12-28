@@ -61,7 +61,7 @@ class FeedsParser:
                                    domain_fingerprint=domain_fingerprint,
                                    status_code=200,
                                    content = response.meta[b'html'],
-                                   state=States.DEFAULT)
+                                   state=States.CRAWLED)
         self.hb_table.put(unhexlify(response.meta[b'fingerprint']), obj)
         print obj
 
