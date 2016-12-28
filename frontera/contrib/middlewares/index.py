@@ -1,19 +1,19 @@
 from __future__ import absolute_import
 from frontera.core.components import Middleware
-from elasticsearch_dsl import DocType, Text, Date
+from elasticsearch_dsl import DocType, Text, Date, Keyword
 from elasticsearch_dsl.connections import connections
 
 
 class NewsArticle(DocType):
     title = Text(analyzer='snowball')
     text = Text(analyzer='snowball')
-    url = Text(index='not_analyzed')
+    url = Keyword(index='not_analyzed')
     published_date = Date()
     crawled_date = Date()
-    named_entities = Text(index='not_analyzed')
-    netloc = Text(index='not_analyzed')
-    authors = Text(index='not_analyzed')
-    image = Text(index='not_analyzed')
+    named_entities = Keyword(index='not_analyzed', multi=True)
+    netloc = Keyword(index='not_analyzed')
+    authors = Keyword(index='not_analyzed', multi=True)
+    image = Keyword(index='not_analyzed')
 
 
     class Meta:
@@ -84,6 +84,9 @@ class ElasticSearchIndexMiddleware(BaseIndexMiddleware):
             del obj.meta[b"image"]
         except:
             pass
+
+    def add_to_index(self, obj):
+        return self._add_to_index(obj)
 
     def _add_to_index(self, obj):
         id = str(obj.meta[b'fingerprint'])

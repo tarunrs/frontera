@@ -7,6 +7,7 @@ import datetime
 import nltk
 from newspaper import Article
 
+
 class BaseExtractMiddleware(Middleware):
     component_name = 'Base Extract Middleware'
 
@@ -48,9 +49,9 @@ class NewsDetailsExtractMiddleware(BaseExtractMiddleware):
 
     component_name = 'News Details Extract Middleware'
 
-    def _add_details(self, obj):
+    def add_details(self, obj, html):
         a = Article(obj.url)
-        a.download(html=obj.body)
+        a.download(html=html)
         a.parse()
         obj.meta[b"text"] = a.text
         obj.meta[b"title"] = a.title
@@ -63,6 +64,9 @@ class NewsDetailsExtractMiddleware(BaseExtractMiddleware):
         obj.meta[b"authors"] = a.authors
 
         return obj
+
+    def _add_details(self, obj):
+        return self.add_details(self, obj, obj.body)
 
 
 class EntityDetailsExtractMiddleware(BaseExtractMiddleware):
@@ -85,6 +89,8 @@ class EntityDetailsExtractMiddleware(BaseExtractMiddleware):
                     entity_names.extend(self._extract_entity_names(child))
 
         return entity_names
+    def add_details(self, obj):
+        return self._add_details(obj)
 
     def _add_details(self, obj):
         sentences = nltk.sent_tokenize(obj.meta[b"text"])

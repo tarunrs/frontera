@@ -97,6 +97,9 @@ class DomainMiddleware(Middleware):
                                              for url in obj.meta[b'redirect_urls']]
         return obj
 
+    def add_domain(self, obj):
+        return self._add_domain(obj)
+
     def parse_domain_info(self, url, test_mode=False):
         if test_mode:
             match = re.match('([A-Z])\w+', url)
