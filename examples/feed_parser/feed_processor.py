@@ -10,7 +10,7 @@ from frontera.contrib.middlewares.index import ElasticSearchIndexMiddleware
 from frontera.contrib.middlewares.domain import DomainMiddleware
 from binascii import unhexlify
 import yaml
-
+import happybase
 
 class Manager:
 
@@ -33,13 +33,12 @@ class FeedsParser:
     def __init__(self):
         self.manager = Manager()
         hb_host = self.manager.settings.get("HBASE_THRIFT_HOST")
-        hb_port = self.manager.settings.get("HBASE_THRIFT_PORT")
-        hb_timeout = self.manager.settings.get("HBASE_THRIFT_TIMEOUT")
-        self.hb_connection = happybase.Connection(
-            host=hb_host, port=hb_port, timeout=hb_timeout)
+        hb_port = int(self.manager.settings.get("HBASE_THRIFT_PORT"))
+        hb_timeout = int(self.manager.settings.get("HBASE_TIMEOUT"))
+        print hb_host, hb_port, hb_timeout
+        self.hb_connection = happybase.Connection(host=hb_host, port=hb_port, timeout=hb_timeout)
         self.hb_table = self.hb_connection.table("crawler:metadata")
 
-        self.hb_connection = Connection()
         self.feeds = []
         self.nde = NewsDetailsExtractMiddleware(None)
         self.ede = EntityDetailsExtractMiddleware(None)
@@ -61,9 +60,10 @@ class FeedsParser:
                                    created_at=utcnow_timestamp(),
                                    domain_fingerprint=domain_fingerprint,
                                    status_code=200,
-                                   #content = response.meta[b'html'],
+                                   content = response.meta[b'html'],
                                    state=States.DEFAULT)
         self.hb_table.put(unhexlify(response.meta[b'fingerprint']), obj)
+        print obj
 
     def _parse(self, feed):
         doc = feedparser.parse(feed)
@@ -76,9 +76,8 @@ class FeedsParser:
                 res.meta[b"published_date"] = datetime.fromtimestamp(
                     mktime(item["published_parsed"]))
             res = self.ede.add_details(res)
-            print res.meta
-            self.esi.add_to_index(res)
             self.index_in_hbase(res)
+            self.esi.add_to_index(res)
 
     def parse(self):
         for feed in self.feeds:
