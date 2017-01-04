@@ -5,7 +5,7 @@ from scrapy.spiders import CrawlSpider, Rule
 
 
 class BCSpider(CrawlSpider):
-    name = 'bc'
+    name = 'crediwatchbot'
 
     def strip_url(urls):
         urls = [b.replace("http://", "") for b in urls]
