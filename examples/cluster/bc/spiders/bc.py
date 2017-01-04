@@ -1,30 +1,35 @@
 # -*- coding: utf-8 -*-
-from scrapy.spider import Spider
-from scrapy.http import Request
-from scrapy.http.response.html import HtmlResponse
 from scrapy.linkextractors import LinkExtractor
 from scrapy import signals
-from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import CrawlSpider, Rule
 
 
 class BCSpider(CrawlSpider):
     name = 'bc'
-    a = open("seeds.txt").readlines()
-    a = [b.replace("http://", "") for b in a]
-    a = [b.replace("www.", "") for b in a]
-    a = [b.strip("\n\/") for b in a]
-    allowed_domains = a
+
+    def strip_url(urls):
+        urls = [b.replace("http://", "") for b in urls]
+        urls = [b.replace("https://", "") for b in urls]
+        urls = [b.replace("www.", "") for b in urls]
+        urls = [b.strip("\n\/") for b in urls]
+        return urls
+
+    allowed_domains = open("seeds.txt").readlines()
+    allowed_domains = strip_url(allowed_domains)
+    blocked_domains = open("block.txt").readlines()
+    blocked_domains = strip_url(blocked_domains)
 
     rules = (
-        Rule(LinkExtractor(allow_domains=allowed_domains), follow=True),
+        Rule(LinkExtractor(allow_domains=allowed_domains,
+                           deny_domains=blocked_domains), follow=True),
     )
 
     @classmethod
     def from_crawler(cls, crawler, *args, **kwargs):
         spider = super(BCSpider, cls).from_crawler(crawler, *args, **kwargs)
         spider._set_crawler(crawler)
-        spider.crawler.signals.connect(spider.spider_idle, signal=signals.spider_idle)
+        spider.crawler.signals.connect(
+            spider.spider_idle, signal=signals.spider_idle)
         return spider
 
     def spider_idle(self):
