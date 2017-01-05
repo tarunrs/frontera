@@ -22,3 +22,7 @@ http://paper.hindustantimes.com/
 http://epaper.indianexpress.com/
 http://epaper.navhindtimes.in/
 http://epaper.theshillongtimes.com/
+http://epaper.timesofindia.com
+http://epaperbeta.timesofindia.com/
+http://epaper.mydigitalfc.com/
+http://epaper.sakaaltimes.com/
