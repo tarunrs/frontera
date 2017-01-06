@@ -35,7 +35,6 @@ class FeedsParser:
         hb_host = self.manager.settings.get("HBASE_THRIFT_HOST")
         hb_port = int(self.manager.settings.get("HBASE_THRIFT_PORT"))
         hb_timeout = int(self.manager.settings.get("HBASE_TIMEOUT"))
-        print hb_host, hb_port, hb_timeout
         self.hb_connection = happybase.Connection(host=hb_host, port=hb_port, timeout=hb_timeout)
         self.hb_table = self.hb_connection.table("crawler:metadata")
 
@@ -63,25 +62,31 @@ class FeedsParser:
                                    content = response.meta[b'html'],
                                    state=States.CRAWLED)
         self.hb_table.put(unhexlify(response.meta[b'fingerprint']), obj)
-        print obj
 
     def _parse(self, feed):
+        print " [INFO] Parsing:", feed
         doc = feedparser.parse(feed)
         for item in doc["items"]:
-            res = Response(item["link"])
-            res = self.de.add_domain(res)
-            res.meta[b"fingerprint"] = hostname_local_fingerprint(res.url)
-            res = self.nde.add_details(res, None)
-            if res.meta[b"published_date"] is None:
-                res.meta[b"published_date"] = datetime.fromtimestamp(
-                    mktime(item["published_parsed"]))
-            res = self.ede.add_details(res)
-            self.index_in_hbase(res)
-            self.esi.add_to_index(res)
+            try:
+                res = Response(item["link"])
+                res = self.de.add_domain(res)
+                res.meta[b"fingerprint"] = hostname_local_fingerprint(res.url)
+                res = self.nde.add_details(res, None)
+                if res.meta[b"published_date"] is None:
+                    res.meta[b"published_date"] = datetime.fromtimestamp(
+                        mktime(item["published_parsed"]))
+                res = self.ede.add_details(res)
+                self.index_in_hbase(res)
+                self.esi.add_to_index(res)
+            except Exception as e:
+                print " [ERROR]", e  
 
     def parse(self):
         for feed in self.feeds:
-            self._parse(feed)
+            try:
+                self._parse(feed)
+            except:
+                print " [ERROR]", feed
 
 if __name__ == "__main__":
     f = FeedsParser()
