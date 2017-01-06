@@ -12,7 +12,7 @@ DOWNLOADER_MIDDLEWARES.update({
     'frontera.contrib.scrapy.middlewares.schedulers.SchedulerDownloaderMiddleware': 999,
 })
 
-BOT_NAME = 'bc'
+BOT_NAME = 'crediwatchbot (www.crediwatch.com)'
 
 SPIDER_MODULES = ['bc.spiders']
 NEWSPIDER_MODULE = 'bc.spiders'
