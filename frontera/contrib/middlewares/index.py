@@ -14,6 +14,7 @@ class NewsArticle(DocType):
     netloc = Keyword(index='not_analyzed')
     authors = Keyword(index='not_analyzed', multi=True)
     image = Keyword(index='not_analyzed')
+    content_hash = Keyword(index='not_analyzed')
 
 
     class Meta:
@@ -66,6 +67,7 @@ class ElasticSearchIndexMiddleware(BaseIndexMiddleware):
 
     def _delete_fields(self, obj):
         del obj.meta[b"text"]
+        del obj.meta[b"content_hash"]
         del obj.meta[b"title"]
         del obj.meta[b"html"]
         try:
@@ -94,6 +96,7 @@ class ElasticSearchIndexMiddleware(BaseIndexMiddleware):
         article = NewsArticle(meta={'id': id})
         article.url = obj.url
         article.text = obj.meta[b"text"]
+        article.content_hash = obj.meta[b"content_hash"]
         article.title = obj.meta[b"title"]
         try:
             article.published_date = obj.meta[b"published_date"]
