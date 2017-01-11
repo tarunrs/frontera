@@ -2,6 +2,7 @@ http://bhasha.ptinews.com/
 http://epaperbeta.timesofindia.com/
 http://onlineepaper.asianage.com/
 http://epaper.thehindubusinessline.com/
+http://m.thehindubusinessline.com/
 http://epaper.business-standard.com/
 http://hindi.business-standard.com/
 http://epaper.dailyexcelsior.com/
@@ -13,6 +14,7 @@ http://epaper.freepressjournal.in/
 https://epaper.kashmirobserver.net/
 http://epaper.kashmirtimes.com/
 http://epaper.livemint.com/
+http://paper.livemint.com/
 http://hindi.economictimes.indiatimes.com/
 http://gujarati.economictimes.indiatimes.com/
 https://eschool.thehindu.com
@@ -26,3 +28,7 @@ http://epaper.timesofindia.com
 http://epaperbeta.timesofindia.com/
 http://epaper.mydigitalfc.com/
 http://epaper.sakaaltimes.com/
+http://epaper.tribuneindia.com
+http://epaper2.mid-day.com
+http://speed.economictimes.indiatimes.com/
+http://wallpapers.mid-day.com/
