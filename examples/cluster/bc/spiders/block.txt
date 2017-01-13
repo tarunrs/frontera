@@ -32,3 +32,6 @@ http://epaper.tribuneindia.com
 http://epaper2.mid-day.com
 http://speed.economictimes.indiatimes.com/
 http://wallpapers.mid-day.com/
+http://www.paathshala.hindustantimes.com/
+http://m.mid-day.com/
+http://m.greaterkashmir.com/
