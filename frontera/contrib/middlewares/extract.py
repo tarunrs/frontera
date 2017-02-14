@@ -5,6 +5,7 @@ from frontera.utils.misc import get_crc32
 import datetime
 import nltk
 from newspaper import Article
+from nltk.stem.snowball import SnowballStemmer
 
 
 class BaseExtractMiddleware(Middleware):
@@ -53,7 +54,7 @@ class NewsDetailsExtractMiddleware(BaseExtractMiddleware):
         a.download(html=html)
         a.parse()
         obj.meta[b"text"] = a.text
-        obj.meta[b"content_hash"] = get_crc32(a.text) 
+        obj.meta[b"content_hash"] = get_crc32(a.text)
         obj.meta[b"title"] = a.title
         obj.meta[b"html"] = a.html
         obj.meta[b"published_date"] = a.publish_date
@@ -78,6 +79,7 @@ class EntityDetailsExtractMiddleware(BaseExtractMiddleware):
     """
 
     component_name = 'Entity Details Extract Middleware'
+    stemmer = SnowballStemmer("english")
 
     def _extract_entity_names(self, t):
         entity_names = []
@@ -90,8 +92,19 @@ class EntityDetailsExtractMiddleware(BaseExtractMiddleware):
                     entity_names.extend(self._extract_entity_names(child))
 
         return entity_names
+
     def add_details(self, obj):
         return self._add_details(obj)
+
+    def stem_sentence(self, sentence):
+        tokens = [self.stemmer.stem(token.lower()) for token in sentence]
+        return " ".join(tokens)
+
+    def stem_sentences(self, sentences):
+        ret_sentences = []
+        for sentence in sentences:
+            ret_sentences.append(self.stem_sentence(sentence))
+        return ret_sentences
 
     def _add_details(self, obj):
         sentences = nltk.sent_tokenize(obj.meta[b"text"])
@@ -99,6 +112,7 @@ class EntityDetailsExtractMiddleware(BaseExtractMiddleware):
             sentence) for sentence in sentences]
         tagged_sentences = [nltk.pos_tag(sentence)
                             for sentence in tokenized_sentences]
+        stemmed_sentences = self.stem_sentences(tokenized_sentences)
         chunked_sentences = nltk.ne_chunk_sents(tagged_sentences, binary=True)
         entity_names = []
         for tree in chunked_sentences:
@@ -106,4 +120,5 @@ class EntityDetailsExtractMiddleware(BaseExtractMiddleware):
         entity_names = [entity.lower() for entity in entity_names]
         entity_names = list(set(entity_names))
         obj.meta[b"named_entities"] = entity_names
+        obj.meta[b"stemmed_sentences"] = stemmed_sentences
         return obj

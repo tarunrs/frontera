@@ -15,6 +15,7 @@ class NewsArticle(DocType):
     authors = Keyword(index='not_analyzed', multi=True)
     image = Keyword(index='not_analyzed')
     content_hash = Keyword(index='not_analyzed')
+    stemmed_sentences = Keyword(index='not_analyzed', multi=True)
 
 
     class Meta:
@@ -80,6 +81,10 @@ class ElasticSearchIndexMiddleware(BaseIndexMiddleware):
         except:
             pass
         try:
+            del obj.meta[b"stemmed_sentences"]
+        except:
+            pass
+        try:
             del obj.meta[b"authors"]
         except:
             pass
@@ -104,6 +109,7 @@ class ElasticSearchIndexMiddleware(BaseIndexMiddleware):
             pass
         article.crawled_date = obj.meta[b"crawled_date"]
         article.named_entities = obj.meta[b"named_entities"]
+        article.stemmed_sentences = obj.meta[b"stemmed_sentences"]
         article.netloc = obj.meta[b"domain"][b'netloc']
         article.authors = obj.meta[b"authors"]
         article.image = obj.meta[b"image"]
