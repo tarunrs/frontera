@@ -10,6 +10,7 @@ SPIDER_MIDDLEWARES.update({
 })
 DOWNLOADER_MIDDLEWARES.update({
     'frontera.contrib.scrapy.middlewares.schedulers.SchedulerDownloaderMiddleware': 999,
+    'frontera.contrib.scrapy.middlewares.robots.RobotsCrawlDelayMiddleware': 100,
 })
 
 BOT_NAME = 'crediwatchbot (www.crediwatch.com)'
@@ -19,6 +20,10 @@ NEWSPIDER_MODULE = 'bc.spiders'
 
 CONCURRENT_REQUESTS=256
 CONCURRENT_REQUESTS_PER_DOMAIN=1
+
+
+ROBOTS_CRAWLDELAY_ENABLED = True
+ROBOTS_CRAWLDELAY_VERBOSE = True  # enable stats
 
 DOWNLOAD_DELAY=0.0
 DOWNLOAD_TIMEOUT=180
