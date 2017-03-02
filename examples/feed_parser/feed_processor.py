@@ -72,9 +72,12 @@ class FeedsParser:
                 res = self.de.add_domain(res)
                 res.meta[b"fingerprint"] = hostname_local_fingerprint(res.url)
                 res = self.nde.add_details(res, None)
-                if res.meta[b"published_date"] is None:
-                    res.meta[b"published_date"] = datetime.fromtimestamp(
-                        mktime(item["published_parsed"]))
+                try:
+                  if res.meta[b"published_date"] is None:
+                      res.meta[b"published_date"] = datetime.fromtimestamp(
+                          mktime(item["published_parsed"]))
+                except Exception as e:
+                  print " [ERROR]", e
                 res = self.ede.add_details(res)
                 self.index_in_hbase(res)
                 self.esi.add_to_index(res)
@@ -89,5 +92,7 @@ class FeedsParser:
                 print " [ERROR]", feed
 
 if __name__ == "__main__":
-    f = FeedsParser()
-    f.parse()
+    while True:
+        f = FeedsParser()
+        f.parse()
+        print "done"
