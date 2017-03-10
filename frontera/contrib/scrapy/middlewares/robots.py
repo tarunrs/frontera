@@ -36,7 +36,7 @@ class RobotRules(Rules):
         if delay is not None:
             return delay
 
-        return self.get_min_delay(map(self.delay, self.agents))
+        return
 
     @classmethod
     def get_min_delay(cls, delays):
@@ -122,7 +122,7 @@ class RobotsCrawlDelayMiddleware(object):
         if rules is None:
             return
 
-        robots_delay = rules.delay()
+        robots_delay = rules.delay(agent="crediwatchbot")
         if robots_delay is None:
             return
 
