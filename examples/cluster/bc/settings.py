@@ -13,6 +13,10 @@ DOWNLOADER_MIDDLEWARES.update({
     'frontera.contrib.scrapy.middlewares.robots.RobotsCrawlDelayMiddleware': 100,
 })
 
+EXTENSIONS = {
+    'scrapy_jsonrpc.webservice.WebService': 500,
+}
+
 BOT_NAME = 'crediwatchbot (www.crediwatch.com)'
 
 SPIDER_MODULES = ['bc.spiders']
@@ -47,4 +51,6 @@ LOG_LEVEL='INFO'
 ROBOTSTXT_OBEY = True
 ROBOTSTXT_ENABLED = True
 
-
+JSONRPC_ENABLED = True
+JSONRPC_HOST='0.0.0.0'
+JSONRPC_PORT = [6080, 6081]
