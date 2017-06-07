@@ -148,15 +148,18 @@ class PTICrawler:
         r = session.post(url, params)
 
     def process(self):
+        print " [INFO] Logging in"
         session, doc, links = self.get_news_links()
         try:
+            print " [INFO] Logged in. Getting paginated links"
             res = session.get("http://www.ptinews.com/updatesession.aspx")
             links += self.get_paginated_links(session, doc)
         except Exception as e:
             print " [ERROR] ", e
 
+        print " [INFO] Crawling and parsing articles. Found:", str(len(links))
         for url in links:
-            print url
+            print " [CRWL]", url
             try:
                 res = Response(url)
                 res = self.de.add_domain(res)
@@ -168,7 +171,7 @@ class PTICrawler:
                 res.meta[b"title"] = title
                 res.meta[b"html"] = html
                 res.meta[b"published_date"] = published_date
-                res.meta[b"crawled_date"] = datetime.datetime.now()
+                res.meta[b"crawled_date"] = datetime.now()
                 res.meta[b"image"] = None
                 res.meta[b"authors"] = author
                 res = self.ede.add_details(res)
