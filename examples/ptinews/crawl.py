@@ -1,3 +1,4 @@
+#!/usr/bin/python
 import requests
 from bs4 import BeautifulSoup
 import json
@@ -12,6 +13,7 @@ from frontera.contrib.middlewares.domain import DomainMiddleware
 from binascii import unhexlify
 import yaml
 import happybase
+import logging
 
 
 class Manager:
@@ -33,6 +35,7 @@ class Response:
 class PTICrawler:
 
     def __init__(self):
+        logging.basicConfig(filename='crawl.log', level=logging.INFO, format='%(asctime)s %(message)s')
         self.manager = Manager()
         hb_host = self.manager.settings.get("HBASE_THRIFT_HOST")
         hb_port = int(self.manager.settings.get("HBASE_THRIFT_PORT"))
@@ -148,18 +151,18 @@ class PTICrawler:
         r = session.post(url, params)
 
     def process(self):
-        print " [INFO] Logging in"
+        logging.info("Logging in")
         session, doc, links = self.get_news_links()
         try:
-            print " [INFO] Logged in. Getting paginated links"
+            logging.info("Logged in. Getting paginated links")
             res = session.get("http://www.ptinews.com/updatesession.aspx")
             links += self.get_paginated_links(session, doc)
         except Exception as e:
-            print " [ERROR] ", e
+            logging.error(e)
 
-        print " [INFO] Crawling and parsing articles. Found:", str(len(links))
+        logging.info("Crawling and parsing articles. Found: %s", str(len(links)))
         for url in links:
-            print " [CRWL]", url
+            logging.info("Crawling: %s", url)
             try:
                 res = Response(url)
                 res = self.de.add_domain(res)
@@ -178,7 +181,7 @@ class PTICrawler:
                 self.index_in_hbase(res)
                 self.esi.add_to_index(res)
             except Exception as e:
-                print " [ERROR]", e
+               logging.error(e)
         self.logout(session, doc)
 
 if __name__ == "__main__":
