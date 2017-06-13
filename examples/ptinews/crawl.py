@@ -16,6 +16,8 @@ import happybase
 import logging
 
 
+logfile = "/home/cia/bitbucket/frontera/examples/ptinews/crawl.log"
+
 class Manager:
 
     def __init__(self):
@@ -35,7 +37,7 @@ class Response:
 class PTICrawler:
 
     def __init__(self):
-        logging.basicConfig(filename='crawl.log', level=logging.INFO, format='%(asctime)s %(message)s')
+        logging.basicConfig(filename=logfile, level=logging.INFO, format='%(asctime)s %(message)s')
         self.manager = Manager()
         hb_host = self.manager.settings.get("HBASE_THRIFT_HOST")
         hb_port = int(self.manager.settings.get("HBASE_THRIFT_PORT"))
@@ -68,7 +70,7 @@ class PTICrawler:
         published_date = doc.findAll("font", {"class": "fullstorytime"})[
             1].get_text()
         published_date = datetime.strptime(
-            published_date, "%d/%m/%Y %I:%M:%S %p")
+            published_date, "%m/%d/%Y %I:%M:%S %p")
         body = doc.find("div", {"class": "fulstorytext"}).get_text()
         l = body.split("\r\n")
         if "By" in l[0]:
