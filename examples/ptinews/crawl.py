@@ -17,12 +17,13 @@ import logging
 
 
 logfile = "/home/cia/bitbucket/frontera/examples/ptinews/crawl.log"
+configfile = "/home/cia/bitbucket/frontera/examples/ptinews/config.yaml"
 
 class Manager:
 
     def __init__(self):
         self.settings = dict()
-        self.settings = yaml.safe_load(open("config.yaml"))
+        self.settings = yaml.safe_load(open(configfile))
         self.test_mode = False
 
 
