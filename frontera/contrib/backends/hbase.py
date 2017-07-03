@@ -225,8 +225,7 @@ class HBaseQueue(Queue):
         count = 0
         prefix = '%d_' % partition_id
         now_ts = int(time())
-        filter = "PrefixFilter ('%s') AND SingleColumnValueFilter ('f', 't', <=, 'binary:%d')" % (
-            prefix, now_ts)
+        
         while tries < self.GET_RETRIES:
             tries += 1
             limit *= 5.5 if tries > 1 else 1.0
@@ -236,7 +235,7 @@ class HBaseQueue(Queue):
             queue.clear()
             count = 0
             try:
-                for rk, data in table.scan(limit=int(limit), batch_size=256, filter=filter):
+                for rk, data in table.scan(limit=int(limit), batch_size=256, row_prefix=prefix):
                     for cq, buf in six.iteritems(data):
                         if cq == b'f:t':
                             continue
