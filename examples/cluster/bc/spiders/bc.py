@@ -12,6 +12,8 @@ class BCSpider(CrawlSpider):
         urls = [b.replace("https://", "") for b in urls]
         urls = [b.replace("www.", "") for b in urls]
         urls = [b.strip("\n\/") for b in urls]
+        urls = [b.split("/")[0] for b in urls]
+        urls = list(set(urls))
         return urls
 
     allowed_domains = open("seeds.txt").readlines()
