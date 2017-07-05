@@ -183,6 +183,7 @@ class PTICrawler:
                 res = self.ede.add_details(res)
                 self.index_in_hbase(res)
                 self.esi.add_to_index(res)
+                logging.info("Published date: %s", str(published_date))
             except Exception as e:
                logging.error(e)
         self.logout(session, doc)

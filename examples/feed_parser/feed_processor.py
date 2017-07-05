@@ -66,6 +66,7 @@ class FeedsParser:
     def _parse(self, feed):
         print " [INFO] Parsing:", feed
         doc = feedparser.parse(feed)
+        domains = []
         for item in doc["items"]:
             try:
                 res = Response(item["link"])
@@ -80,19 +81,29 @@ class FeedsParser:
                   print " [ERROR]", e
                 res = self.ede.add_details(res)
                 self.index_in_hbase(res)
+                domains.append(res.meta[b"domain"][b'netloc'])
                 self.esi.add_to_index(res)
             except Exception as e:
                 print " [ERROR]", e  
+        domains = list(set(domains))
+        return domains
 
     def parse(self):
+        domains = []
         for feed in self.feeds:
             try:
-                self._parse(feed)
+                domains += self._parse(feed)
             except:
                 print " [ERROR]", feed
+        domains = list(set(domains))
+        f = open("domains.csv", "ab")
+        s = "\n".join(domains)
+        s = s.encode("utf-8")
+        f.write(s)
+        f.close()
 
 if __name__ == "__main__":
     while True:
         f = FeedsParser()
         f.parse()
-        print "done"
+        print " [INFO] Done"

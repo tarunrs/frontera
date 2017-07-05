@@ -41,6 +41,7 @@ class FileProcessor:
             self.urls = [el.strip("\n") for el in self.urls]
 
     def parse(self):
+        domains = []
         for url in self.urls:
             try:
                 res = Response(url)
@@ -48,10 +49,17 @@ class FileProcessor:
                 res.meta[b"fingerprint"] = hostname_local_fingerprint(res.url)
                 res = self.nde.add_details(res, None)
                 res = self.ede.add_details(res)
+                domains.append(res.meta[b"domain"][b'netloc'])
                 print res.meta[b"domain"][b'netloc']
                 self.esi.add_to_index(res)
             except Exception as e:
                 print " [ERROR]", e  
+        domains = list(set(domains))
+        domains.sort()
+        s = "\n".join(domains)
+        f = open("domains.csv", "w")
+        f.write(s)
+        f.close()
 
 
 if __name__ == "__main__":
