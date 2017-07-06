@@ -9,8 +9,11 @@ from frontera.contrib.middlewares.extract import NewsDetailsExtractMiddleware, E
 from frontera.contrib.middlewares.index import ElasticSearchIndexMiddleware
 from frontera.contrib.middlewares.domain import DomainMiddleware
 from binascii import unhexlify
+from elasticsearch_dsl.connections import connections
 import yaml
 import happybase
+import sys
+
 
 class Manager:
 
@@ -37,6 +40,7 @@ class FeedsParser:
         hb_timeout = int(self.manager.settings.get("HBASE_TIMEOUT"))
         self.hb_connection = happybase.Connection(host=hb_host, port=hb_port, timeout=hb_timeout)
         self.hb_table = self.hb_connection.table("crawler:metadata")
+        self.es_client = connections.create_connection(hosts=[self.manager.settings.get('ELASTICSEARCH_SERVER', "localhost")], timeout=30)
 
         self.feeds = []
         self.nde = NewsDetailsExtractMiddleware(None)
@@ -63,6 +67,13 @@ class FeedsParser:
                                    state=States.CRAWLED)
         self.hb_table.put(unhexlify(response.meta[b'fingerprint']), obj)
 
+    def already_indexed(self, response):
+        try:
+            doc = self.es_client.get(id=response.meta[b"fingerprint"], index="news")
+            return True
+        except:
+            return False
+
     def _parse(self, feed):
         print " [INFO] Parsing:", feed
         doc = feedparser.parse(feed)
@@ -72,6 +83,8 @@ class FeedsParser:
                 res = Response(item["link"])
                 res = self.de.add_domain(res)
                 res.meta[b"fingerprint"] = hostname_local_fingerprint(res.url)
+                if self.already_indexed(res):
+                    continue
                 res = self.nde.add_details(res, None)
                 try:
                   if res.meta[b"published_date"] is None:
@@ -88,9 +101,16 @@ class FeedsParser:
         domains = list(set(domains))
         return domains
 
-    def parse(self):
+    def parse(self, partition_num, total_partitions):
         domains = []
-        for feed in self.feeds:
+        num_feeds = len(self.feeds)
+        partition_size = num_feeds / total_partitions
+        start_index = partition_num * partition_size
+        if partition_num + 1 == total_partitions:
+            end_index = num_feeds
+        else:
+            end_index = start_index + partition_size
+        for feed in self.feeds[start_index:end_index]:
             try:
                 domains += self._parse(feed)
             except:
@@ -103,7 +123,16 @@ class FeedsParser:
         f.close()
 
 if __name__ == "__main__":
+    if len(sys.argv) != 3:
+        print " [ERROR] Usage: python feed_processor.py <total_partitions> <partition_number>"
+        sys.exit()
+    if int(sys.argv[2]) >= int(sys.argv[1]):
+        print " [ERROR] Partition number cannot be more than total_partitions"
+        sys.exit()
     while True:
+        total_partitions = int(sys.argv[1])
+        partition_num = int(sys.argv[2])
         f = FeedsParser()
-        f.parse()
+        print " [INFO] Parsing partition " + str(partition_num) + " of " + str(total_partitions)
+        f.parse(partition_num, total_partitions)
         print " [INFO] Done"

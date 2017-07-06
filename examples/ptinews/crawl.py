@@ -14,7 +14,7 @@ from binascii import unhexlify
 import yaml
 import happybase
 import logging
-
+from elasticsearch_dsl.connections import connections
 
 logfile = "/home/cia/bitbucket/frontera/examples/ptinews/crawl.log"
 configfile = "/home/cia/bitbucket/frontera/examples/ptinews/config.yaml"
@@ -51,6 +51,7 @@ class PTICrawler:
         self.ede = EntityDetailsExtractMiddleware(None)
         self.esi = ElasticSearchIndexMiddleware(self.manager)
         self.de = DomainMiddleware(self.manager)
+        self.es_client = connections.create_connection(hosts=[self.manager.settings.get('ELASTICSEARCH_SERVER', "localhost")], timeout=30)
 
     def index_in_hbase(self, response):
         domain_fingerprint = sha1(response.meta[b"domain"][b"name"])
@@ -153,6 +154,13 @@ class PTICrawler:
                 params[el["name"]] = el.get("value")
         r = session.post(url, params)
 
+    def already_indexed(self, response):
+        try:
+            doc = self.es_client.get(id=response.meta[b"fingerprint"], index="news")
+            return True
+        except:
+            return False
+
     def process(self):
         logging.info("Logging in")
         session, doc, links = self.get_news_links()
@@ -170,6 +178,9 @@ class PTICrawler:
                 res = Response(url)
                 res = self.de.add_domain(res)
                 res.meta[b"fingerprint"] = hostname_local_fingerprint(res.url)
+                if self.already_indexed(res):
+                    continue
+
                 title, text, html, author, published_date = self.get_article_details(
                     url)
                 res.meta[b"text"] = text
