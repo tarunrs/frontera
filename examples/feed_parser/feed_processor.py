@@ -1,7 +1,6 @@
 import feedparser
 from time import mktime
 from datetime import datetime
-import pickle
 from frontera.utils.fingerprint import hostname_local_fingerprint, sha1
 from frontera.core.components import States
 from frontera.contrib.backends.hbase import *
@@ -13,6 +12,7 @@ from elasticsearch_dsl.connections import connections
 import yaml
 import happybase
 import sys
+import logging
 
 
 class Manager:
@@ -33,14 +33,18 @@ class Response:
 
 class FeedsParser:
 
-    def __init__(self):
+    def __init__(self, logfile):
         self.manager = Manager()
+        logging.basicConfig(filename=logfile, level=logging.INFO,
+                            format='%(asctime)s %(message)s')
         hb_host = self.manager.settings.get("HBASE_THRIFT_HOST")
         hb_port = int(self.manager.settings.get("HBASE_THRIFT_PORT"))
         hb_timeout = int(self.manager.settings.get("HBASE_TIMEOUT"))
-        self.hb_connection = happybase.Connection(host=hb_host, port=hb_port, timeout=hb_timeout)
+        self.hb_connection = happybase.Connection(
+            host=hb_host, port=hb_port, timeout=hb_timeout)
         self.hb_table = self.hb_connection.table("crawler:metadata")
-        self.es_client = connections.create_connection(hosts=[self.manager.settings.get('ELASTICSEARCH_SERVER', "localhost")], timeout=30)
+        self.es_client = connections.create_connection(
+            hosts=[self.manager.settings.get('ELASTICSEARCH_SERVER', "localhost")], timeout=30)
 
         self.feeds = []
         self.nde = NewsDetailsExtractMiddleware(None)
@@ -51,10 +55,6 @@ class FeedsParser:
         with open(self.manager.settings.get("FEED_FILE")) as f:
             self.feeds = f.readlines()
             self.feeds = [el.strip("\n") for el in self.feeds]
-        try:
-            self.feed_dates = pickle.load(open("feed-dates.pkl"))
-        except:
-            self.feed_dates = {}
 
     def index_in_hbase(self, response):
         domain_fingerprint = sha1(response.meta[b"domain"][b"name"])
@@ -63,19 +63,20 @@ class FeedsParser:
                                    created_at=utcnow_timestamp(),
                                    domain_fingerprint=domain_fingerprint,
                                    status_code=200,
-                                   content = response.meta[b'html'],
+                                   content=response.meta[b'html'],
                                    state=States.CRAWLED)
         self.hb_table.put(unhexlify(response.meta[b'fingerprint']), obj)
 
     def already_indexed(self, response):
         try:
-            doc = self.es_client.get(id=response.meta[b"fingerprint"], index="news")
+            doc = self.es_client.get(
+                id=response.meta[b"fingerprint"], index="news")
             return True
         except:
             return False
 
     def _parse(self, feed):
-        print " [INFO] Parsing:", feed
+        logging.info("Parsing: %s", feed)
         doc = feedparser.parse(feed)
         domains = []
         for item in doc["items"]:
@@ -87,21 +88,23 @@ class FeedsParser:
                     continue
                 res = self.nde.add_details(res, None)
                 try:
-                  if res.meta[b"published_date"] is None:
-                      res.meta[b"published_date"] = datetime.fromtimestamp(
-                          mktime(item["published_parsed"]))
+                    if res.meta[b"published_date"] is None:
+                        res.meta[b"published_date"] = datetime.fromtimestamp(
+                            mktime(item["published_parsed"]))
                 except Exception as e:
-                  print " [ERROR]", e
+                    logging.error(e)
                 res = self.ede.add_details(res)
                 self.index_in_hbase(res)
                 domains.append(res.meta[b"domain"][b'netloc'])
                 self.esi.add_to_index(res)
             except Exception as e:
-                print " [ERROR]", e  
+                logging.error(e)
         domains = list(set(domains))
         return domains
 
     def parse(self, partition_num, total_partitions):
+        logging.info("Parsing partition %s of %s", str(
+            partition_num), str(total_partitions))
         domains = []
         num_feeds = len(self.feeds)
         partition_size = num_feeds / total_partitions
@@ -114,25 +117,25 @@ class FeedsParser:
             try:
                 domains += self._parse(feed)
             except:
-                print " [ERROR]", feed
+                logging.error(feed)
         domains = list(set(domains))
         f = open("domains.csv", "ab")
         s = "\n".join(domains)
+        s = s + "\n"
         s = s.encode("utf-8")
         f.write(s)
         f.close()
+        logging.info("Done")
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        print " [ERROR] Usage: python feed_processor.py <total_partitions> <partition_number>"
+    if len(sys.argv) != 4:
+        print " [ERROR] Usage: python feed_processor.py <total_partitions> <partition_number> <logfile>"
         sys.exit()
     if int(sys.argv[2]) >= int(sys.argv[1]):
-        print " [ERROR] Partition number cannot be more than total_partitions"
+        print " [ERROR] partition_number cannot be more than total_partitions"
         sys.exit()
     while True:
         total_partitions = int(sys.argv[1])
         partition_num = int(sys.argv[2])
-        f = FeedsParser()
-        print " [INFO] Parsing partition " + str(partition_num) + " of " + str(total_partitions)
+        f = FeedsParser(sys.argv[3])
         f.parse(partition_num, total_partitions)
-        print " [INFO] Done"
