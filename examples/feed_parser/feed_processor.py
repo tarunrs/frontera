@@ -37,6 +37,11 @@ class FeedsParser:
         self.manager = Manager()
         logging.basicConfig(filename=logfile, level=logging.INFO,
                             format='%(asctime)s %(message)s')
+        logging.getLogger("elasticsearch_dsl").setLevel(logging.WARNING)
+        logging.getLogger("newspaper").setLevel(logging.WARNING)
+        logging.getLogger("requests").setLevel(logging.WARNING)
+        logging.getLogger("elasticsearch").setLevel(logging.WARNING)
+        self.logger = logging.getLogger(__name__)
         hb_host = self.manager.settings.get("HBASE_THRIFT_HOST")
         hb_port = int(self.manager.settings.get("HBASE_THRIFT_PORT"))
         hb_timeout = int(self.manager.settings.get("HBASE_TIMEOUT"))
@@ -76,7 +81,7 @@ class FeedsParser:
             return False
 
     def _parse(self, feed):
-        logging.info("Parsing: %s", feed)
+        self.logger.info("Parsing: %s", feed)
         doc = feedparser.parse(feed)
         domains = []
         for item in doc["items"]:
@@ -92,18 +97,18 @@ class FeedsParser:
                         res.meta[b"published_date"] = datetime.fromtimestamp(
                             mktime(item["published_parsed"]))
                 except Exception as e:
-                    logging.error(e)
+                    self.logger.error(e)
                 res = self.ede.add_details(res)
                 self.index_in_hbase(res)
                 domains.append(res.meta[b"domain"][b'netloc'])
                 self.esi.add_to_index(res)
             except Exception as e:
-                logging.error(e)
+                self.logger.error(e)
         domains = list(set(domains))
         return domains
 
     def parse(self, partition_num, total_partitions):
-        logging.info("Parsing partition %s of %s", str(
+        self.logger.info("Parsing partition %s of %s", str(
             partition_num), str(total_partitions))
         domains = []
         num_feeds = len(self.feeds)
@@ -117,7 +122,7 @@ class FeedsParser:
             try:
                 domains += self._parse(feed)
             except:
-                logging.error(feed)
+                self.logger.error(feed)
         domains = list(set(domains))
         f = open("domains.csv", "ab")
         s = "\n".join(domains)
@@ -125,7 +130,7 @@ class FeedsParser:
         s = s.encode("utf-8")
         f.write(s)
         f.close()
-        logging.info("Done")
+        self.logger.info("Done")
 
 if __name__ == "__main__":
     if len(sys.argv) != 4:
