@@ -151,10 +151,10 @@ class SitemapsParser(object):
         self.manager = Manager()
         logging.basicConfig(filename=logfile, level=logging.INFO,
                             format='%(asctime)s %(message)s')
-        logging.getLogger("elasticsearch_dsl").setLevel(logging.WARNING)
+        logging.getLogger("elasticsearch_dsl").setLevel(logging.ERROR)
         logging.getLogger("newspaper").setLevel(logging.WARNING)
         logging.getLogger("requests").setLevel(logging.WARNING)
-        logging.getLogger("elasticsearch").setLevel(logging.WARNING)
+        logging.getLogger("elasticsearch").setLevel(logging.ERROR)
         self.logger = logging.getLogger(__name__)
         hb_host = self.manager.settings.get("HBASE_THRIFT_HOST")
         hb_port = int(self.manager.settings.get("HBASE_THRIFT_PORT"))
@@ -170,7 +170,9 @@ class SitemapsParser(object):
         self.de = DomainMiddleware(self.manager)
         self.parser = SitemapParser()
         self.new_links_count = 0
+        self.global_new_links_count = 0
         self.total_links_count = 0
+        self.global_total_links_count = 0
 
         with open(self.manager.settings.get("SITEMAPS_FILE")) as f:
             self._sitemap_urls = f.readlines()
@@ -241,7 +243,10 @@ class SitemapsParser(object):
                 self._parse(url)
             except:
                 self.logger.error(url)
-        self.logger.info("Found %s links, %s new", str(self.total_links_count), str(self.new_links_count))
+            self.logger.info("Found %s links, %s new", str(self.total_links_count), str(self.new_links_count))
+            self.global_total_links_count += self.total_links_count
+            self.global_new_links_count += self.new_links_count
+        self.logger.info("Found %s total links, %s new", str(self.global_total_links_count), str(self.global_new_links_count))
         self.logger.info("Done")
 
 if __name__ == '__main__':
