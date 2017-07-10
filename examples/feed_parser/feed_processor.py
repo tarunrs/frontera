@@ -56,6 +56,8 @@ class FeedsParser:
         self.ede = EntityDetailsExtractMiddleware(None)
         self.esi = ElasticSearchIndexMiddleware(self.manager)
         self.de = DomainMiddleware(self.manager)
+        self.new_links_count = 0 
+        self.total_links_count = 0
 
         with open(self.manager.settings.get("FEED_FILE")) as f:
             self.feeds = f.readlines()
@@ -81,9 +83,10 @@ class FeedsParser:
             return False
 
     def _parse(self, feed):
-        self.logger.info("Parsing: %s", feed)
         doc = feedparser.parse(feed)
         domains = []
+        self.total_links_count += len(doc["items"])
+        self.logger.info("Parsing: %s, Found: %s", feed, str(len(doc["items"])))
         for item in doc["items"]:
             try:
                 res = Response(item["link"])
@@ -102,6 +105,7 @@ class FeedsParser:
                 self.index_in_hbase(res)
                 domains.append(res.meta[b"domain"][b'netloc'])
                 self.esi.add_to_index(res)
+                self.new_links_count += 1
             except Exception as e:
                 self.logger.error(e)
         domains = list(set(domains))
@@ -130,6 +134,7 @@ class FeedsParser:
         s = s.encode("utf-8")
         f.write(s)
         f.close()
+        self.logger.info("Found %s links, %s new", str(self.total_links_count), str(self.new_links_count))
         self.logger.info("Done")
 
 if __name__ == "__main__":
