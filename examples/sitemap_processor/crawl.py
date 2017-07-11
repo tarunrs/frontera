@@ -223,7 +223,10 @@ class SitemapsParser(object):
                 except Exception as e:
                     self.logger.error(e)
                 res = self.ede.add_details(res)
-                self.index_in_hbase(res)
+                try:
+                    self.index_in_hbase(res)
+                except:
+                    self.logger.error("Error while indexing in HBase: %s", res.url)
                 self.esi.add_to_index(res)
                 self.new_links_count += 1
             except Exception as e:
