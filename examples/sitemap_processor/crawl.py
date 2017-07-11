@@ -1,3 +1,4 @@
+#!/usr/bin/python
 __version__ = '0.1'
 
 import urllib2
@@ -24,6 +25,9 @@ import yaml
 import happybase
 import sys
 import logging
+
+logfolder = "/home/cia/bitbucket/frontera/examples/sitemap_processor/"
+configfile = "/home/cia/bitbucket/frontera/examples/sitemap_processor/config.yaml"
 
 DEFAULT_USER_AGENT = 'Mozilla/5.0 (X11; Linux x86_64) sitemap-parser/{}'.format(
     __version__)
@@ -134,7 +138,7 @@ class Manager:
 
     def __init__(self):
         self.settings = dict()
-        self.settings = yaml.safe_load(open("config.yaml"))
+        self.settings = yaml.safe_load(open(configfile))
         self.test_mode = False
 
 
@@ -151,7 +155,7 @@ class SitemapsParser(object):
     def __init__(self, logfile):
         self._sitemap_urls = list()
         self.manager = Manager()
-        logging.basicConfig(filename=logfile, level=logging.INFO,
+        logging.basicConfig(filename=logfolder + logfile, level=logging.INFO,
                             format='%(asctime)s %(message)s')
         logging.getLogger("elasticsearch_dsl").setLevel(logging.ERROR)
         logging.getLogger("newspaper").setLevel(logging.WARNING)
@@ -247,7 +251,7 @@ class SitemapsParser(object):
             try:
                 self._parse(url)
             except:
-                self.logger.error(url)
+                self.logger.error("Error while parsing: %", url)
             self.logger.info("Found %s links, %s new", str(self.total_links_count), str(self.new_links_count))
             self.global_total_links_count += self.total_links_count
             self.global_new_links_count += self.new_links_count
