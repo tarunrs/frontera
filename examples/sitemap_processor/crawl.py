@@ -70,6 +70,8 @@ class SitemapParser(object):
             raise RuntimeError(err)
 
         if resp.code == 200:
+            if resp.headers.get('content-type') is None:
+                return GzipFile(fileobj=StringIO(resp.read())).read()
             content_type = resp.headers['content-type'].lower()
             if ';' in content_type:
                 content_type = content_type.split(';')[0]
