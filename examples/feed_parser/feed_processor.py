@@ -52,8 +52,8 @@ class FeedsParser:
             hosts=[self.manager.settings.get('ELASTICSEARCH_SERVER', "localhost")], timeout=30)
 
         self.feeds = []
-        self.nde = NewsDetailsExtractMiddleware(None)
-        self.ede = EntityDetailsExtractMiddleware(None)
+        self.nde = NewsDetailsExtractMiddleware(self.manager)
+        self.ede = EntityDetailsExtractMiddleware()
         self.esi = ElasticSearchIndexMiddleware(self.manager)
         self.de = DomainMiddleware(self.manager)
         self.new_links_count = 0 
