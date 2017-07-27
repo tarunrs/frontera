@@ -191,6 +191,8 @@ class PTICrawler:
                 res.meta[b"crawled_date"] = datetime.now()
                 res.meta[b"image"] = None
                 res.meta[b"authors"] = author
+                res.meta[b"location"] = ["india"]
+                res.meta[b"language"] = "en"
                 res = self.ede.add_details(res)
                 self.index_in_hbase(res)
                 self.esi.add_to_index(res)
