@@ -69,7 +69,7 @@ class SitemapParser(object):
 
         req = urllib2.Request(url, headers={'User-Agent': DEFAULT_USER_AGENT})
         try:
-            resp = urllib2.urlopen(req)
+            resp = urllib2.urlopen(req, timeout=30)
         except urllib2.URLError, err:
             raise RuntimeError(err)
 
