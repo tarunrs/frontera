@@ -3,3 +3,5 @@ SITEMAPS_FILE: "sitemaps.csv"
 HBASE_TIMEOUT: 30000
 HBASE_THRIFT_HOST: "10.2.0.17"
 HBASE_THRIFT_PORT: "9090"
+LOCATIONS_FILE: "/home/cia/bitbucket/frontera/examples/cluster/bc/config/locations.pkl"
+LANGUAGES_FILE: "/home/cia/bitbucket/frontera/examples/cluster/bc/config/languages.pkl"

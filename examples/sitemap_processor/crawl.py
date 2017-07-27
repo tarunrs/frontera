@@ -170,7 +170,7 @@ class SitemapsParser(object):
         self.hb_table = self.hb_connection.table("crawler:metadata")
         self.es_client = connections.create_connection(
             hosts=[self.manager.settings.get('ELASTICSEARCH_SERVER', "localhost")], timeout=30)
-        self.nde = NewsDetailsExtractMiddleware(None)
+        self.nde = NewsDetailsExtractMiddleware(self.manager)
         self.ede = EntityDetailsExtractMiddleware(None)
         self.esi = ElasticSearchIndexMiddleware(self.manager)
         self.de = DomainMiddleware(self.manager)
