@@ -16,6 +16,8 @@ class NewsArticle(DocType):
     image = Keyword(index='not_analyzed')
     content_hash = Keyword(index='not_analyzed')
     stemmed_sentences = Keyword(index='not_analyzed', multi=True)
+    location = Keyword(index='not_analyzed', multi=True)
+    language = Keyword(index='not_analyzed')
 
 
     class Meta:
@@ -71,6 +73,8 @@ class ElasticSearchIndexMiddleware(BaseIndexMiddleware):
         del obj.meta[b"content_hash"]
         del obj.meta[b"title"]
         del obj.meta[b"html"]
+        del obj.meta[b"language"]
+        del obj.meta[b"location"]
         try:
             del obj.meta[b"published_date"]
         except:
@@ -113,7 +117,8 @@ class ElasticSearchIndexMiddleware(BaseIndexMiddleware):
         article.netloc = obj.meta[b"domain"][b'netloc']
         article.authors = obj.meta[b"authors"]
         article.image = obj.meta[b"image"]
-
+        article.location = obj.meta[b"location"]
+        article.language = obj.meta[b"language"]
         try:
             article.save()
         except:

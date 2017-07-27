@@ -6,6 +6,7 @@ import datetime
 import nltk
 from newspaper import Article
 from nltk.stem.snowball import SnowballStemmer
+import pickle
 
 
 class BaseExtractMiddleware(Middleware):
@@ -49,8 +50,32 @@ class NewsDetailsExtractMiddleware(BaseExtractMiddleware):
 
     component_name = 'News Details Extract Middleware'
 
+    def __init__(self, manager):
+        self.language_map = pickle.load(
+            open(manager.settings.get('LANGUAGES_FILE')))
+        self.locations_map = pickle.load(
+            open(manager.settings.get('LOCATIONS_FILE')))
+
+    def get_language(self, domain):
+        try:
+            for el in self.language_map:
+                if el in domain:
+                    return self.language_map[el]
+            return "en"
+        except:
+            return "en"
+
+    def get_locations(self, domain):
+        try:
+            return self.locations_map[domain]
+        except Exception as e:
+            return ['undefined']
+
     def add_details(self, obj, html):
-        a = Article(obj.url)
+        domain = obj.meta[b"domain"][b'netloc']
+        language = self.get_language(domain)
+        location = self.get_locations(domain)
+        a = Article(obj.url, language=language)
         a.download(html=html)
         a.parse()
         obj.meta[b"text"] = a.text
@@ -64,7 +89,8 @@ class NewsDetailsExtractMiddleware(BaseExtractMiddleware):
         obj.meta[b"crawled_date"] = datetime.datetime.now()
         obj.meta[b"image"] = a.top_image
         obj.meta[b"authors"] = a.authors
-
+        obj.meta[b"language"] = language
+        obj.meta[b"location"] = location
         return obj
 
     def _add_details(self, obj):

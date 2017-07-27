@@ -16,7 +16,7 @@ class BCSpider(CrawlSpider):
         urls = list(set(urls))
         return urls
 
-    allowed_domains = open("seeds.txt").readlines()
+    allowed_domains = open("allow.txt").readlines()
     allowed_domains = strip_url(allowed_domains)
     blocked_domains = open("block.txt").readlines()
     blocked_domains = strip_url(blocked_domains)

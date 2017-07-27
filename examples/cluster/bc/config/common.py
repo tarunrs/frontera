@@ -20,6 +20,8 @@ MIDDLEWARES.extend([
 QUEUE_HOSTNAME_PARTITIONING = True
 URL_FINGERPRINT_FUNCTION='frontera.utils.fingerprint.hostname_local_fingerprint'
 ELASTICSEARCH_SERVER="10.2.0.7"
+LOCATIONS_FILE="/home/cia/bitbucket/frontera/examples/cluster/bc/config/locations.pkl"
+LANGUAGES_FILE="/home/cia/bitbucket/frontera/examples/cluster/bc/config/languages.pkl"
 
 MESSAGE_BUS='frontera.contrib.messagebus.kafkabus.MessageBus'
 KAFKA_LOCATION = '10.2.0.4:9092'
