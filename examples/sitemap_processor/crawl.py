@@ -180,7 +180,7 @@ class SitemapsParser(object):
         self.total_links_count = 0
         self.global_total_links_count = 0
 
-        with open(self.manager.settings.get("SITEMAPS_FILE")) as f:
+        with open(logfolder + self.manager.settings.get("SITEMAPS_FILE")) as f:
             self._sitemap_urls = f.readlines()
             self._sitemap_urls = [el.strip("\n") for el in self._sitemap_urls]
 
@@ -265,8 +265,7 @@ if __name__ == '__main__':
     if int(sys.argv[2]) >= int(sys.argv[1]):
         print " [ERROR] partition_number cannot be more than total_partitions"
         sys.exit()
-    while True:
-        total_partitions = int(sys.argv[1])
-        partition_num = int(sys.argv[2])
-        s = SitemapsParser(sys.argv[3])
-        s.parse(partition_num, total_partitions)
+    total_partitions = int(sys.argv[1])
+    partition_num = int(sys.argv[2])
+    s = SitemapsParser(sys.argv[3])
+    s.parse(partition_num, total_partitions)
