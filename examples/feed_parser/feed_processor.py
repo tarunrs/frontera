@@ -53,7 +53,7 @@ class FeedsParser:
 
         self.feeds = []
         self.nde = NewsDetailsExtractMiddleware(self.manager)
-        self.ede = EntityDetailsExtractMiddleware()
+        self.ede = EntityDetailsExtractMiddleware(None)
         self.esi = ElasticSearchIndexMiddleware(self.manager)
         self.de = DomainMiddleware(self.manager)
         self.new_links_count = 0 
