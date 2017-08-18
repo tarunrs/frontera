@@ -25,6 +25,7 @@ import yaml
 import happybase
 import sys
 import logging
+import pickle
 
 logfolder = "/home/cia/bitbucket/frontera/examples/sitemap_processor/"
 configfile = "/home/cia/bitbucket/frontera/examples/sitemap_processor/config.yaml"
@@ -179,10 +180,15 @@ class SitemapsParser(object):
         self.global_new_links_count = 0
         self.total_links_count = 0
         self.global_total_links_count = 0
+        self.url_hash_cache = dict()
 
         with open(logfolder + self.manager.settings.get("SITEMAPS_FILE")) as f:
             self._sitemap_urls = f.readlines()
             self._sitemap_urls = [el.strip("\n") for el in self._sitemap_urls]
+
+    def load_url_cache(self, partition_num):
+        self.prev_url_hash_cache = pickle.load(
+            open("url_cache_" + str(partition_num) + ".pkl"))
 
     def index_in_hbase(self, response):
         domain_fingerprint = sha1(response.meta[b"domain"][b"name"])
@@ -199,6 +205,7 @@ class SitemapsParser(object):
         try:
             doc = self.es_client.get(
                 id=response.meta[b"fingerprint"], index="news")
+            self.url_hash_cache[response.meta[b"fingerprint"]] = True
             return True
         except:
             return False
@@ -230,7 +237,8 @@ class SitemapsParser(object):
                 try:
                     self.index_in_hbase(res)
                 except:
-                    self.logger.error("Error while indexing in HBase: %s", res.url)
+                    self.logger.error(
+                        "Error while indexing in HBase: %s", res.url)
                 self.esi.add_to_index(res)
                 self.new_links_count += 1
             except Exception as e:
@@ -252,11 +260,17 @@ class SitemapsParser(object):
                 self._parse(url)
             except:
                 self.logger.error("Error while parsing: %", url)
-            self.logger.info("Found %s links, %s new", str(self.total_links_count), str(self.new_links_count))
+            self.logger.info("Found %s links, %s new", str(
+                self.total_links_count), str(self.new_links_count))
             self.global_total_links_count += self.total_links_count
             self.global_new_links_count += self.new_links_count
-        self.logger.info("Found %s total links, %s new", str(self.global_total_links_count), str(self.global_new_links_count))
+        self.logger.info("Found %s total links, %s new", str(
+            self.global_total_links_count), str(self.global_new_links_count))
+        self.logger.info("Dumping URL cache")
+        pickle.dump(self.url_hash_cache, open(
+            "url_cache_" + str(partition_num) + ".pkl", "wb"))
         self.logger.info("Done")
+
 
 if __name__ == '__main__':
     if len(sys.argv) != 4:
