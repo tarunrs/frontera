@@ -13,6 +13,7 @@ import yaml
 import happybase
 import sys
 import logging
+import pickle
 
 
 class Manager:
@@ -58,10 +59,15 @@ class FeedsParser:
         self.de = DomainMiddleware(self.manager)
         self.new_links_count = 0 
         self.total_links_count = 0
+        self.url_hash_cache = dict()
 
         with open(self.manager.settings.get("FEED_FILE")) as f:
             self.feeds = f.readlines()
             self.feeds = [el.strip("\n") for el in self.feeds]
+
+    def load_url_cache(self, partition_num):
+        self.prev_url_hash_cache = pickle.load(
+            open("url_cache_" + str(partition_num) + ".pkl"))
 
     def index_in_hbase(self, response):
         domain_fingerprint = sha1(response.meta[b"domain"][b"name"])
@@ -78,6 +84,7 @@ class FeedsParser:
         try:
             doc = self.es_client.get(
                 id=response.meta[b"fingerprint"], index="news")
+            self.url_hash_cache[response.meta[b"fingerprint"]] = True
             return True
         except:
             return False
@@ -134,7 +141,10 @@ class FeedsParser:
         s = s.encode("utf-8")
         f.write(s)
         f.close()
-        self.logger.info("Found %s links, %s new", str(self.total_links_count), str(self.new_links_count))
+        self.logger.info("Found %s total links, %s new", str(self.total_links_count), str(self.new_links_count))
+        self.logger.info("Dumping URL cache")
+        pickle.dump(self.url_hash_cache, open(
+            "url_cache_" + str(partition_num) + ".pkl", "wb"))
         self.logger.info("Done")
 
 if __name__ == "__main__":
