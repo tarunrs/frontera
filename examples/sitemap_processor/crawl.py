@@ -181,14 +181,21 @@ class SitemapsParser(object):
         self.total_links_count = 0
         self.global_total_links_count = 0
         self.url_hash_cache = dict()
+        self.use_url_cache = False
 
         with open(logfolder + self.manager.settings.get("SITEMAPS_FILE")) as f:
             self._sitemap_urls = f.readlines()
             self._sitemap_urls = [el.strip("\n") for el in self._sitemap_urls]
 
     def load_url_cache(self, partition_num):
-        self.prev_url_hash_cache = pickle.load(
-            open("url_cache_" + str(partition_num) + ".pkl"))
+        try:
+            self.logger.info("Loading URL cache for partition: " + str(partition_num))
+            filename = self.manager.settings.get("CACHE_LOCATION") + "url_cache_" + str(partition_num) + ".pkl"
+            self.prev_url_hash_cache = pickle.load(open(filename))
+            self.use_url_cache = True
+        except Exception as e:
+            self.use_url_cache = False
+            self.logger.error(str(e))
 
     def index_in_hbase(self, response):
         domain_fingerprint = sha1(response.meta[b"domain"][b"name"])
@@ -203,9 +210,14 @@ class SitemapsParser(object):
 
     def already_indexed(self, response):
         try:
+            self.url_hash_cache[response.meta[b"fingerprint"]] = True
+            if self.use_url_cache:
+                if self.prev_url_hash_cache.get(response.meta[b'fingerprint']) is not None:
+                    return True
+                else:
+                    return False
             doc = self.es_client.get(
                 id=response.meta[b"fingerprint"], index="news")
-            self.url_hash_cache[response.meta[b"fingerprint"]] = True
             return True
         except:
             return False
@@ -248,6 +260,7 @@ class SitemapsParser(object):
     def parse(self, partition_num, total_partitions):
         self.logger.info("Parsing partition %s of %s", str(
             partition_num), str(total_partitions))
+        self.load_url_cache(partition_num)
         num_feeds = len(self._sitemap_urls)
         partition_size = num_feeds / total_partitions
         start_index = partition_num * partition_size
@@ -259,16 +272,16 @@ class SitemapsParser(object):
             try:
                 self._parse(url)
             except:
-                self.logger.error("Error while parsing: %", url)
+                self.logger.error("Error while parsing: %s", url)
             self.logger.info("Found %s links, %s new", str(
                 self.total_links_count), str(self.new_links_count))
             self.global_total_links_count += self.total_links_count
             self.global_new_links_count += self.new_links_count
         self.logger.info("Found %s total links, %s new", str(
             self.global_total_links_count), str(self.global_new_links_count))
-        self.logger.info("Dumping URL cache")
-        pickle.dump(self.url_hash_cache, open(
-            "url_cache_" + str(partition_num) + ".pkl", "wb"))
+        filename = self.manager.settings.get("CACHE_LOCATION") + "url_cache_" + str(partition_num) + ".pkl"
+        self.logger.info("Dumping URL cache: " + filename)
+        pickle.dump(self.url_hash_cache, open(filename, "wb"))
         self.logger.info("Done")
 
 

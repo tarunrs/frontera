@@ -82,9 +82,9 @@ class FeedsParser:
 
     def already_indexed(self, response):
         try:
+            self.url_hash_cache[response.meta[b"fingerprint"]] = True
             doc = self.es_client.get(
                 id=response.meta[b"fingerprint"], index="news")
-            self.url_hash_cache[response.meta[b"fingerprint"]] = True
             return True
         except:
             return False
