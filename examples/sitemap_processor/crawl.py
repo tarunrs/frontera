@@ -193,9 +193,12 @@ class SitemapsParser(object):
             filename = self.manager.settings.get("CACHE_LOCATION") + "url_cache_" + str(partition_num) + ".pkl"
             self.prev_url_hash_cache = pickle.load(open(filename))
             self.use_url_cache = True
+            self.logger.info("Using URL cache")
         except Exception as e:
             self.use_url_cache = False
             self.logger.error(str(e))
+            self.logger.info(
+                "URL cache could not be loaded. Using elasticsearch index")
 
     def index_in_hbase(self, response):
         domain_fingerprint = sha1(response.meta[b"domain"][b"name"])

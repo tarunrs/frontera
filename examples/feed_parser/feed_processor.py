@@ -57,17 +57,29 @@ class FeedsParser:
         self.ede = EntityDetailsExtractMiddleware(None)
         self.esi = ElasticSearchIndexMiddleware(self.manager)
         self.de = DomainMiddleware(self.manager)
-        self.new_links_count = 0 
+        self.new_links_count = 0
         self.total_links_count = 0
         self.url_hash_cache = dict()
+        self.use_url_cache = False
 
         with open(self.manager.settings.get("FEED_FILE")) as f:
             self.feeds = f.readlines()
             self.feeds = [el.strip("\n") for el in self.feeds]
 
     def load_url_cache(self, partition_num):
-        self.prev_url_hash_cache = pickle.load(
-            open("url_cache_" + str(partition_num) + ".pkl"))
+        try:
+            self.logger.info(
+                "Loading URL cache for partition: " + str(partition_num))
+            filename = self.manager.settings.get(
+                "CACHE_LOCATION") + "url_cache_" + str(partition_num) + ".pkl"
+            self.prev_url_hash_cache = pickle.load(open(filename))
+            self.use_url_cache = True
+            self.logger.info("Using URL cache")
+        except Exception as e:
+            self.use_url_cache = False
+            self.logger.error(str(e))
+            self.logger.info(
+                "URL cache could not be loaded. Using elasticsearch index")
 
     def index_in_hbase(self, response):
         domain_fingerprint = sha1(response.meta[b"domain"][b"name"])
@@ -83,6 +95,11 @@ class FeedsParser:
     def already_indexed(self, response):
         try:
             self.url_hash_cache[response.meta[b"fingerprint"]] = True
+            if self.use_url_cache:
+                if self.prev_url_hash_cache.get(response.meta[b'fingerprint']) is not None:
+                    return True
+                else:
+                    return False
             doc = self.es_client.get(
                 id=response.meta[b"fingerprint"], index="news")
             return True
@@ -93,7 +110,8 @@ class FeedsParser:
         doc = feedparser.parse(feed)
         domains = []
         self.total_links_count += len(doc["items"])
-        self.logger.info("Parsing: %s, Found: %s", feed, str(len(doc["items"])))
+        self.logger.info("Parsing: %s, Found: %s",
+                         feed, str(len(doc["items"])))
         for item in doc["items"]:
             try:
                 res = Response(item["link"])
@@ -121,6 +139,7 @@ class FeedsParser:
     def parse(self, partition_num, total_partitions):
         self.logger.info("Parsing partition %s of %s", str(
             partition_num), str(total_partitions))
+        self.load_url_cache(partition_num)
         domains = []
         num_feeds = len(self.feeds)
         partition_size = num_feeds / total_partitions
@@ -132,8 +151,8 @@ class FeedsParser:
         for feed in self.feeds[start_index:end_index]:
             try:
                 domains += self._parse(feed)
-            except:
-                self.logger.error(feed)
+            except Exception as e:
+                self.logger.error(str(e) + ": " + feed)
         domains = list(set(domains))
         f = open("domains.csv", "ab")
         s = "\n".join(domains)
@@ -141,11 +160,14 @@ class FeedsParser:
         s = s.encode("utf-8")
         f.write(s)
         f.close()
-        self.logger.info("Found %s total links, %s new", str(self.total_links_count), str(self.new_links_count))
-        self.logger.info("Dumping URL cache")
-        pickle.dump(self.url_hash_cache, open(
-            "url_cache_" + str(partition_num) + ".pkl", "wb"))
+        self.logger.info("Found %s total links, %s new", str(
+            self.total_links_count), str(self.new_links_count))
+        filename = self.manager.settings.get(
+            "CACHE_LOCATION") + "url_cache_" + str(partition_num) + ".pkl"
+        self.logger.info("Dumping URL cache: " + filename)
+        pickle.dump(self.url_hash_cache, open(filename, "wb"))
         self.logger.info("Done")
+
 
 if __name__ == "__main__":
     if len(sys.argv) != 4:
