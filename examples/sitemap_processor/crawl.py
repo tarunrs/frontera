@@ -25,6 +25,7 @@ import yaml
 import happybase
 import sys
 import logging
+import pickle
 
 logfolder = "/home/cia/bitbucket/frontera/examples/sitemap_processor/"
 configfile = "/home/cia/bitbucket/frontera/examples/sitemap_processor/config.yaml"
@@ -69,7 +70,7 @@ class SitemapParser(object):
 
         req = urllib2.Request(url, headers={'User-Agent': DEFAULT_USER_AGENT})
         try:
-            resp = urllib2.urlopen(req)
+            resp = urllib2.urlopen(req, timeout=30)
         except urllib2.URLError, err:
             raise RuntimeError(err)
 
@@ -170,7 +171,7 @@ class SitemapsParser(object):
         self.hb_table = self.hb_connection.table("crawler:metadata")
         self.es_client = connections.create_connection(
             hosts=[self.manager.settings.get('ELASTICSEARCH_SERVER', "localhost")], timeout=30)
-        self.nde = NewsDetailsExtractMiddleware(None)
+        self.nde = NewsDetailsExtractMiddleware(self.manager)
         self.ede = EntityDetailsExtractMiddleware(None)
         self.esi = ElasticSearchIndexMiddleware(self.manager)
         self.de = DomainMiddleware(self.manager)
@@ -179,10 +180,25 @@ class SitemapsParser(object):
         self.global_new_links_count = 0
         self.total_links_count = 0
         self.global_total_links_count = 0
+        self.url_hash_cache = dict()
+        self.use_url_cache = False
 
         with open(logfolder + self.manager.settings.get("SITEMAPS_FILE")) as f:
             self._sitemap_urls = f.readlines()
             self._sitemap_urls = [el.strip("\n") for el in self._sitemap_urls]
+
+    def load_url_cache(self, partition_num):
+        try:
+            self.logger.info("Loading URL cache for partition: " + str(partition_num))
+            filename = self.manager.settings.get("CACHE_LOCATION") + "url_cache_" + str(partition_num) + ".pkl"
+            self.prev_url_hash_cache = pickle.load(open(filename))
+            self.use_url_cache = True
+            self.logger.info("Using URL cache")
+        except Exception as e:
+            self.use_url_cache = False
+            self.logger.error(str(e))
+            self.logger.info(
+                "URL cache could not be loaded. Using elasticsearch index")
 
     def index_in_hbase(self, response):
         domain_fingerprint = sha1(response.meta[b"domain"][b"name"])
@@ -197,6 +213,12 @@ class SitemapsParser(object):
 
     def already_indexed(self, response):
         try:
+            self.url_hash_cache[response.meta[b"fingerprint"]] = True
+            if self.use_url_cache:
+                if self.prev_url_hash_cache.get(response.meta[b'fingerprint']) is not None:
+                    return True
+                else:
+                    return False
             doc = self.es_client.get(
                 id=response.meta[b"fingerprint"], index="news")
             return True
@@ -230,7 +252,8 @@ class SitemapsParser(object):
                 try:
                     self.index_in_hbase(res)
                 except:
-                    self.logger.error("Error while indexing in HBase: %s", res.url)
+                    self.logger.error(
+                        "Error while indexing in HBase: %s", res.url)
                 self.esi.add_to_index(res)
                 self.new_links_count += 1
             except Exception as e:
@@ -240,6 +263,7 @@ class SitemapsParser(object):
     def parse(self, partition_num, total_partitions):
         self.logger.info("Parsing partition %s of %s", str(
             partition_num), str(total_partitions))
+        self.load_url_cache(partition_num)
         num_feeds = len(self._sitemap_urls)
         partition_size = num_feeds / total_partitions
         start_index = partition_num * partition_size
@@ -251,12 +275,18 @@ class SitemapsParser(object):
             try:
                 self._parse(url)
             except:
-                self.logger.error("Error while parsing: %", url)
-            self.logger.info("Found %s links, %s new", str(self.total_links_count), str(self.new_links_count))
+                self.logger.error("Error while parsing: %s", url)
+            self.logger.info("Found %s links, %s new", str(
+                self.total_links_count), str(self.new_links_count))
             self.global_total_links_count += self.total_links_count
             self.global_new_links_count += self.new_links_count
-        self.logger.info("Found %s total links, %s new", str(self.global_total_links_count), str(self.global_new_links_count))
+        self.logger.info("Found %s total links, %s new", str(
+            self.global_total_links_count), str(self.global_new_links_count))
+        filename = self.manager.settings.get("CACHE_LOCATION") + "url_cache_" + str(partition_num) + ".pkl"
+        self.logger.info("Dumping URL cache: " + filename)
+        pickle.dump(self.url_hash_cache, open(filename, "wb"))
         self.logger.info("Done")
+
 
 if __name__ == '__main__':
     if len(sys.argv) != 4:
