@@ -404,7 +404,6 @@ class HBaseMetadata(Metadata):
             try:
                 self.batch.put(unhexlify(seed.meta[b'fingerprint']), obj)
             except Exception as e:
-                self.logger.error(str(e))
                 os.system('kill -9 %d' % os.getpid())
 
     def page_crawled(self, response):
