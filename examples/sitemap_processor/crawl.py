@@ -166,9 +166,9 @@ class SitemapsParser(object):
         hb_host = self.manager.settings.get("HBASE_THRIFT_HOST")
         hb_port = int(self.manager.settings.get("HBASE_THRIFT_PORT"))
         hb_timeout = int(self.manager.settings.get("HBASE_TIMEOUT"))
-        self.hb_connection = happybase.Connection(
-            host=hb_host, port=hb_port, timeout=hb_timeout)
-        self.hb_table = self.hb_connection.table("crawler:metadata")
+        #self.hb_connection = happybase.Connection(
+        #    host=hb_host, port=hb_port, timeout=hb_timeout)
+        #self.hb_table = self.hb_connection.table("crawler:metadata")
         self.es_client = connections.create_connection(
             hosts=[self.manager.settings.get('ELASTICSEARCH_SERVER', "localhost")], timeout=30)
         self.nde = NewsDetailsExtractMiddleware(self.manager)
@@ -209,7 +209,7 @@ class SitemapsParser(object):
                                    status_code=200,
                                    content=response.meta[b'html'],
                                    state=States.CRAWLED)
-        self.hb_table.put(unhexlify(response.meta[b'fingerprint']), obj)
+        #self.hb_table.put(unhexlify(response.meta[b'fingerprint']), obj)
 
     def already_indexed(self, response):
         try:
@@ -249,11 +249,11 @@ class SitemapsParser(object):
                 except Exception as e:
                     self.logger.error(e)
                 res = self.ede.add_details(res)
-                try:
-                    self.index_in_hbase(res)
-                except:
-                    self.logger.error(
-                        "Error while indexing in HBase: %s", res.url)
+                #try:
+                #    self.index_in_hbase(res)
+                #except:
+                #    self.logger.error(
+                #        "Error while indexing in HBase: %s", res.url)
                 self.esi.add_to_index(res)
                 self.new_links_count += 1
             except Exception as e:
