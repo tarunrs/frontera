@@ -24,6 +24,7 @@ from io import BytesIO
 from random import choice
 from collections import Iterable
 import logging
+from sys import exit
 
 
 _pack_functions = {
@@ -351,7 +352,11 @@ class HBaseState(States):
         for chunk in chunks(to_fetch, 65536):
             keys = [unhexlify(fprint) for fprint in chunk]
             table = self.connection.table(self._table_name)
-            records = table.rows(keys, columns=[b's:state'])
+            try:
+                records = table.rows(keys, columns=[b's:state'])
+            except Exception as e:
+                self.logger.error(str(e))
+                exit()
             for key, cells in records:
                 if b's:state' in cells:
                     state = unpack('>B', cells[b's:state'])[0]
@@ -395,7 +400,11 @@ class HBaseMetadata(Metadata):
                                        depth=0,
                                        created_at=utcnow_timestamp(),
                                        domain_fingerprint=seed.meta[b'domain'][b'fingerprint'])
-            self.batch.put(unhexlify(seed.meta[b'fingerprint']), obj)
+            try:
+                self.batch.put(unhexlify(seed.meta[b'fingerprint']), obj)
+            except Exception as e:
+                self.logger.error(str(e))
+                exit()
 
     def page_crawled(self, response):
         obj = prepare_hbase_object(status_code=response.status_code, content=response.body) if self.store_content else \
