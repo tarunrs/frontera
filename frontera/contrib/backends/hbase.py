@@ -24,7 +24,7 @@ from io import BytesIO
 from random import choice
 from collections import Iterable
 import logging
-import sys 
+import os
 
 
 _pack_functions = {
@@ -260,7 +260,7 @@ class HBaseQueue(Queue):
                         break
             except:
                 self.logger.info("[ERROR] With HBase connection. Quitting..")
-                sys._exit()
+                os.system('kill -9 %d' % os.getpid())
                 #self.reestablish_connection()
 
             if min_hosts is not None and len(queue.keys()) < min_hosts:
@@ -357,7 +357,7 @@ class HBaseState(States):
                 records = table.rows(keys, columns=[b's:state'])
             except Exception as e:
                 self.logger.error(str(e))
-                sys._exit()
+                os.system('kill -9 %d' % os.getpid())
             for key, cells in records:
                 if b's:state' in cells:
                     state = unpack('>B', cells[b's:state'])[0]
@@ -405,7 +405,7 @@ class HBaseMetadata(Metadata):
                 self.batch.put(unhexlify(seed.meta[b'fingerprint']), obj)
             except Exception as e:
                 self.logger.error(str(e))
-                sys._exit()
+                os.system('kill -9 %d' % os.getpid())
 
     def page_crawled(self, response):
         obj = prepare_hbase_object(status_code=response.status_code, content=response.body) if self.store_content else \
