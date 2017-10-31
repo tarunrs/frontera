@@ -1,0 +1,3 @@
+check process db_worker_batches with pidfile /var/run/db_worker_batches.pid
+    start program = "/bin/db_worker_batches start"
+    stop program = "/bin/db_worker_batches stop"
