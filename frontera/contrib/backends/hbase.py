@@ -259,9 +259,9 @@ class HBaseQueue(Queue):
                     if count > max_n_requests:
                         break
             except:
-                self.logger.info("[ERROR] With HBase connection. Quitting..")
-                os.system('kill -9 %d' % os.getpid())
-                #self.reestablish_connection()
+                self.logger.error("[ERROR] With HBase connection. Quitting..")
+                #os.system('kill -9 %d' % os.getpid())
+                self.reestablish_connection()
 
             if min_hosts is not None and len(queue.keys()) < min_hosts:
                 continue
