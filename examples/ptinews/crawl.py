@@ -51,7 +51,9 @@ class PTICrawler:
         self.ede = EntityDetailsExtractMiddleware(None)
         self.esi = ElasticSearchIndexMiddleware(self.manager)
         self.de = DomainMiddleware(self.manager)
-        self.es_client = connections.create_connection(hosts=[self.manager.settings.get('ELASTICSEARCH_SERVER', "localhost")], timeout=30)
+        self.es_client = connections.create_connection(
+            hosts=self.manager.settings.get('ELASTICSEARCH_SERVER', ["localhost"]), timeout=30)
+
 
     def index_in_hbase(self, response):
         domain_fingerprint = sha1(response.meta[b"domain"][b"name"])
