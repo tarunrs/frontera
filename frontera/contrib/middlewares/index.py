@@ -65,7 +65,7 @@ class ElasticSearchIndexMiddleware(BaseIndexMiddleware):
 
     def __init__(self, manager):
 
-        connections.create_connection(hosts=[manager.settings.get('ELASTICSEARCH_SERVER', "localhost")])
+        connections.create_connection(hosts=manager.settings.get('ELASTICSEARCH_SERVER', ["localhost"]))
         NewsArticle.init()
 
     def _delete_fields(self, obj):
