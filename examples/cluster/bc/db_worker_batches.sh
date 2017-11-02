@@ -7,7 +7,7 @@ case $1 in
        #source /home/cia
        cd "/home/cia/bitbucket/frontera/examples/cluster/bc"
        # Launch your program as a detached process
-       /usr/bin/nohup stdbuf -oL /usr/bin/python -m frontera.worker.db --config config.dbw --no-incoming > db-batch.log &
+       /usr/bin/nohup stdbuf -oL /usr/bin/python -m frontera.worker.db --config config.dbw --no-incoming >> db-batch.log &
        # Get its PID and store it
        echo $! > ${PIDFILE} 
    ;;
