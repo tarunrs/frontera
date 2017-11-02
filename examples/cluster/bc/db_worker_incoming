@@ -1,0 +1,3 @@
+check process db_worker_incoming with pidfile /var/run/db_worker_incoming.pid
+    start program = "/bin/db_worker_incoming start"
+    stop program = "/bin/db_worker_incoming stop"

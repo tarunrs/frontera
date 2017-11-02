@@ -24,6 +24,7 @@ from io import BytesIO
 from random import choice
 from collections import Iterable
 import logging
+import os
 
 
 _pack_functions = {
@@ -258,7 +259,8 @@ class HBaseQueue(Queue):
                     if count > max_n_requests:
                         break
             except:
-                self.logger.info("[ERROR] With HBase connection. Reestablishing..")
+                self.logger.error("[ERROR] With HBase connection. Quitting..")
+                #os.system('kill -9 %d' % os.getpid())
                 self.reestablish_connection()
 
             if min_hosts is not None and len(queue.keys()) < min_hosts:
@@ -351,7 +353,11 @@ class HBaseState(States):
         for chunk in chunks(to_fetch, 65536):
             keys = [unhexlify(fprint) for fprint in chunk]
             table = self.connection.table(self._table_name)
-            records = table.rows(keys, columns=[b's:state'])
+            try:
+                records = table.rows(keys, columns=[b's:state'])
+            except Exception as e:
+                self.logger.error(str(e))
+                os.system('kill -9 %d' % os.getpid())
             for key, cells in records:
                 if b's:state' in cells:
                     state = unpack('>B', cells[b's:state'])[0]
@@ -395,7 +401,10 @@ class HBaseMetadata(Metadata):
                                        depth=0,
                                        created_at=utcnow_timestamp(),
                                        domain_fingerprint=seed.meta[b'domain'][b'fingerprint'])
-            self.batch.put(unhexlify(seed.meta[b'fingerprint']), obj)
+            try:
+                self.batch.put(unhexlify(seed.meta[b'fingerprint']), obj)
+            except Exception as e:
+                os.system('kill -9 %d' % os.getpid())
 
     def page_crawled(self, response):
         obj = prepare_hbase_object(status_code=response.status_code, content=response.body) if self.store_content else \
