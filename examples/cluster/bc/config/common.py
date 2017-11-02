@@ -19,7 +19,7 @@ MIDDLEWARES.extend([
 #--------------------------------------------------------
 QUEUE_HOSTNAME_PARTITIONING = True
 URL_FINGERPRINT_FUNCTION='frontera.utils.fingerprint.hostname_local_fingerprint'
-ELASTICSEARCH_SERVER="10.2.0.7"
+ELASTICSEARCH_SERVER=["10.2.0.7", "10.2.0.25", "10.2.0.24"]
 LOCATIONS_FILE="/home/cia/bitbucket/frontera/examples/cluster/bc/config/locations.pkl"
 LANGUAGES_FILE="/home/cia/bitbucket/frontera/examples/cluster/bc/config/languages.pkl"
 
