@@ -14,12 +14,14 @@ import happybase
 import sys
 import logging
 import pickle
+import os
 
 
 class Manager:
 
     def __init__(self):
         self.settings = dict()
+        os.chdir(os.path.dirname(__file__))
         self.settings = yaml.safe_load(open("config.yaml"))
         self.test_mode = False
 
