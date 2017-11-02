@@ -6,7 +6,7 @@ case $1 in
    start)
        #source /home/cia
        # Launch your program as a detached process
-       python /home/cia/bitbucket/frontera/examples/feed_parser/feed_processor.py 1 0 /home/cia/bitbucket/frontera/examples/feed_parser/output.log 1>/dev/null &
+       /usr/bin/python /home/cia/bitbucket/frontera/examples/feed_parser/feed_processor.py 1 0 /home/cia/bitbucket/frontera/examples/feed_parser/output.log 2>/tmp/feed_processor.log &
        # Get its PID and store it
        echo $! > ${PIDFILE} 
    ;;
