@@ -79,7 +79,7 @@ class NewsDetailsExtractMiddleware(BaseExtractMiddleware):
         a = Article(obj.url, language=language)
         a.download(html=html)
         a.parse()
-        extractor = Extractor(extractor='ArticleExtractor', html=obj.body)
+        extractor = Extractor(extractor='ArticleExtractor', html=html)
         obj.meta[b"text"] = extractor.getText()
         if len(a.text) > len(obj.meta[b"text"]):
             obj.meta[b"text"] = a.text
