@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 from frontera.core.components import Middleware
+from boilerpipe.extract import Extractor
 import articleDateExtractor
 from frontera.utils.misc import get_crc32
 import datetime
@@ -78,7 +79,10 @@ class NewsDetailsExtractMiddleware(BaseExtractMiddleware):
         a = Article(obj.url, language=language)
         a.download(html=html)
         a.parse()
-        obj.meta[b"text"] = a.text
+        extractor = Extractor(extractor='ArticleExtractor', html=obj.body)
+        obj.meta[b"text"] = extractor.getText()
+        if len(a.text) > len(obj.meta[b"text"]):
+            obj.meta[b"text"] = a.text
         obj.meta[b"content_hash"] = get_crc32(a.text)
         obj.meta[b"title"] = a.title
         obj.meta[b"html"] = a.html
