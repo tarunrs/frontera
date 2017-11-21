@@ -339,7 +339,11 @@ class HBaseState(States):
             with table.batch(transaction=True) as b:
                 for fprint, state in chunk:
                     hb_obj = prepare_hbase_object(state=state)
-                    b.put(unhexlify(fprint), hb_obj)
+                    try:
+                        b.put(unhexlify(fprint), hb_obj)
+                    except Exception as e:
+                        self.logger.error(str(e))
+                        os.system('kill -9 %d' % os.getpid())
         if force_clear:
             self.logger.debug("Cache has %d requests, clearing" %
                               len(self._state_cache))
