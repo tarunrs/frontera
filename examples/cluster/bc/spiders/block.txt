@@ -65,6 +65,7 @@ games.leicestermercury.co.uk
 games.usatoday.com
 games.washingtonpost.com
 gardenshop.telegraph.co.uk
+genome.ch.bbc.co.uk
 independentjobs.independent.co.uk
 jobnetwork.chicagotribune.com
 jobnetwork.latimes.com
@@ -114,9 +115,9 @@ wintergames.ap.org
 www.indeed.com
 www.onfaith.co
 www.paathshala.hindustantimes.com
+www.pinterest.com
 www.sentaracareers.com
 www.shop.express.co.uk
 www.tumblr.com
 www.usajobs.gov
 www.wintergames.ap.org
-www.pinterest.com

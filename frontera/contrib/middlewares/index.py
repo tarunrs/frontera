@@ -19,7 +19,6 @@ class NewsArticle(DocType):
     location = Keyword(index='not_analyzed', multi=True)
     language = Keyword(index='not_analyzed')
 
-
     class Meta:
         index = 'news'
 
@@ -65,7 +64,8 @@ class ElasticSearchIndexMiddleware(BaseIndexMiddleware):
 
     def __init__(self, manager):
 
-        connections.create_connection(hosts=manager.settings.get('ELASTICSEARCH_SERVER', ["localhost"]))
+        connections.create_connection(hosts=manager.settings.get(
+            'ELASTICSEARCH_SERVER', ["localhost"]))
         NewsArticle.init()
 
     def _delete_fields(self, obj):
@@ -121,8 +121,8 @@ class ElasticSearchIndexMiddleware(BaseIndexMiddleware):
         article.language = obj.meta[b"language"]
         try:
             article.save()
-        except:
-            pass
+        except Exception as e:
+            print str(e)
         try:
             self._delete_fields(obj)
         except:
