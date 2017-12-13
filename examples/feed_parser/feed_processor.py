@@ -15,6 +15,7 @@ import sys
 import logging
 import pickle
 import os
+import time
 
 
 class Manager:
@@ -45,12 +46,9 @@ class FeedsParser:
         logging.getLogger("requests").setLevel(logging.WARNING)
         logging.getLogger("elasticsearch").setLevel(logging.WARNING)
         self.logger = logging.getLogger(__name__)
-        hb_host = self.manager.settings.get("HBASE_THRIFT_HOST")
-        hb_port = int(self.manager.settings.get("HBASE_THRIFT_PORT"))
-        hb_timeout = int(self.manager.settings.get("HBASE_TIMEOUT"))
-        #self.hb_connection = happybase.Connection(
-        #    host=hb_host, port=hb_port, timeout=hb_timeout)
-        #self.hb_table = self.hb_connection.table("crawler:metadata")
+        self.hb_connection = None
+        self.hb_table = None
+        self.establish_hbase_connection()
         self.es_client = connections.create_connection(
             hosts=self.manager.settings.get('ELASTICSEARCH_SERVER', ["localhost"]), timeout=30)
 
@@ -67,6 +65,15 @@ class FeedsParser:
         with open(self.manager.settings.get("FEED_FILE")) as f:
             self.feeds = f.readlines()
             self.feeds = [el.strip("\n") for el in self.feeds]
+
+    def establish_hbase_connection(self):
+        hb_host = self.manager.settings.get("HBASE_THRIFT_HOST")
+        hb_port = int(self.manager.settings.get("HBASE_THRIFT_PORT"))
+        hb_timeout = int(self.manager.settings.get("HBASE_TIMEOUT"))
+        self.hb_connection = happybase.Connection(
+            host=hb_host, port=hb_port, timeout=hb_timeout)
+        self.hb_table = self.hb_connection.table("crawler:metadata")
+
 
     def load_url_cache(self, partition_num):
         try:
@@ -92,7 +99,14 @@ class FeedsParser:
                                    status_code=200,
                                    content=response.meta[b'html'],
                                    state=States.CRAWLED)
-        #self.hb_table.put(unhexlify(response.meta[b'fingerprint']), obj)
+        try:
+            self.hb_table.put(unhexlify(response.meta[b'fingerprint']), obj)
+        except Exception as e:
+            self.logger.error(str(e))
+            self.logger.info("Retrying in 30 seconds")
+            time.sleep(30)
+            self.establish_hbase_connection()
+
 
     def already_indexed(self, response):
         try:
@@ -129,9 +143,9 @@ class FeedsParser:
                 except Exception as e:
                     self.logger.error(e)
                 res = self.ede.add_details(res)
-                #self.index_in_hbase(res)
-                domains.append(res.meta[b"domain"][b'netloc'])
                 self.esi.add_to_index(res)
+                self.index_in_hbase(res)
+                domains.append(res.meta[b"domain"][b'netloc'])
                 self.new_links_count += 1
             except Exception as e:
                 self.logger.error(e)
