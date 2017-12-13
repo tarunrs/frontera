@@ -248,7 +248,7 @@ class SitemapsParser(object):
                     if item.get("image") and item["image"].get("loc"):
                         res.meta[b"image"] = item["image"]["loc"]
                 except Exception as e:
-                    self.logger.error(e)
+                    self.logger.error(str(e) + " : " + res.url )
                 res = self.ede.add_details(res)
                 #try:
                 #    self.index_in_hbase(res)
@@ -258,7 +258,9 @@ class SitemapsParser(object):
                 self.esi.add_to_index(res)
                 self.new_links_count += 1
             except Exception as e:
-                self.logger.error(e)
+                self.logger.error(str(e) + " : " + url )
+                self.logger.error(str(e) + " : " + item["loc"] )
+               
         return
 
     def parse(self, partition_num, total_partitions):
