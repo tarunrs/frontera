@@ -11,7 +11,7 @@ try:
 except ImportError:
     import xml.etree.ElementTree as xml_parser
 import dateutil.parser
-from time import mktime
+import time
 from datetime import datetime
 from frontera.utils.fingerprint import hostname_local_fingerprint, sha1
 from frontera.core.components import States
@@ -163,12 +163,9 @@ class SitemapsParser(object):
         logging.getLogger("requests").setLevel(logging.WARNING)
         logging.getLogger("elasticsearch").setLevel(logging.ERROR)
         self.logger = logging.getLogger(__name__)
-        hb_host = self.manager.settings.get("HBASE_THRIFT_HOST")
-        hb_port = int(self.manager.settings.get("HBASE_THRIFT_PORT"))
-        hb_timeout = int(self.manager.settings.get("HBASE_TIMEOUT"))
-        #self.hb_connection = happybase.Connection(
-        #    host=hb_host, port=hb_port, timeout=hb_timeout)
-        #self.hb_table = self.hb_connection.table("crawler:metadata")
+        self.hb_connection = None
+        self.hb_table = None
+        self.establish_hbase_connection()
         self.es_client = connections.create_connection(
             hosts=self.manager.settings.get('ELASTICSEARCH_SERVER', ["localhost"]), timeout=30)
 
@@ -188,10 +185,20 @@ class SitemapsParser(object):
             self._sitemap_urls = f.readlines()
             self._sitemap_urls = [el.strip("\n") for el in self._sitemap_urls]
 
+    def establish_hbase_connection(self):
+        hb_host = self.manager.settings.get("HBASE_THRIFT_HOST")
+        hb_port = int(self.manager.settings.get("HBASE_THRIFT_PORT"))
+        hb_timeout = int(self.manager.settings.get("HBASE_TIMEOUT"))
+        self.hb_connection = happybase.Connection(
+            host=hb_host, port=hb_port, timeout=hb_timeout)
+        self.hb_table = self.hb_connection.table("crawler:metadata")
+
     def load_url_cache(self, partition_num):
         try:
-            self.logger.info("Loading URL cache for partition: " + str(partition_num))
-            filename = self.manager.settings.get("CACHE_LOCATION") + "url_cache_" + str(partition_num) + ".pkl"
+            self.logger.info(
+                "Loading URL cache for partition: " + str(partition_num))
+            filename = self.manager.settings.get(
+                "CACHE_LOCATION") + "url_cache_" + str(partition_num) + ".pkl"
             self.prev_url_hash_cache = pickle.load(open(filename))
             self.use_url_cache = True
             self.logger.info("Using URL cache")
@@ -210,7 +217,14 @@ class SitemapsParser(object):
                                    status_code=200,
                                    content=response.meta[b'html'],
                                    state=States.CRAWLED)
-        #self.hb_table.put(unhexlify(response.meta[b'fingerprint']), obj)
+        try:
+            self.hb_table.put(unhexlify(response.meta[b'fingerprint']), obj)
+        except Exception as e:
+            self.logger.error(str(e))
+            self.logger.info("Retrying in 30 seconds")
+            time.sleep(30)
+            self.establish_hbase_connection()
+            self.index_in_hbase(response)
 
     def already_indexed(self, response):
         try:
@@ -248,19 +262,19 @@ class SitemapsParser(object):
                     if item.get("image") and item["image"].get("loc"):
                         res.meta[b"image"] = item["image"]["loc"]
                 except Exception as e:
-                    self.logger.error(str(e) + " : " + res.url )
+                    self.logger.error(str(e) + " : " + res.url)
                 res = self.ede.add_details(res)
-                #try:
-                #    self.index_in_hbase(res)
-                #except:
-                #    self.logger.error(
-                #        "Error while indexing in HBase: %s", res.url)
+                try:
+                    self.index_in_hbase(res)
+                except Exception as e:
+                    self.logger.error(
+                        "Error while indexing in HBase: %s, %s", res.url, str(e))
                 self.esi.add_to_index(res)
                 self.new_links_count += 1
             except Exception as e:
-                self.logger.error(str(e) + " : " + url )
-                self.logger.error(str(e) + " : " + item["loc"] )
-               
+                self.logger.error(str(e) + " : " + url)
+                self.logger.error(str(e) + " : " + item["loc"])
+
         return
 
     def parse(self, partition_num, total_partitions):
@@ -285,7 +299,8 @@ class SitemapsParser(object):
             self.global_new_links_count += self.new_links_count
         self.logger.info("Found %s total links, %s new", str(
             self.global_total_links_count), str(self.global_new_links_count))
-        filename = self.manager.settings.get("CACHE_LOCATION") + "url_cache_" + str(partition_num) + ".pkl"
+        filename = self.manager.settings.get(
+            "CACHE_LOCATION") + "url_cache_" + str(partition_num) + ".pkl"
         self.logger.info("Dumping URL cache: " + filename)
         pickle.dump(self.url_hash_cache, open(filename, "wb"))
         self.logger.info("Done")

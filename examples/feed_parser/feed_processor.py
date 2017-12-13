@@ -106,6 +106,7 @@ class FeedsParser:
             self.logger.info("Retrying in 30 seconds")
             time.sleep(30)
             self.establish_hbase_connection()
+            self.index_in_hbase(response)
 
 
     def already_indexed(self, response):
