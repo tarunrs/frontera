@@ -143,8 +143,11 @@ class FeedsParser:
                 except Exception as e:
                     self.logger.error(e)
                 res = self.ede.add_details(res)
+                try:
+                    self.index_in_hbase(res)
+                except Exception as e:
+                    self.logger.error(str(e))
                 self.esi.add_to_index(res)
-                self.index_in_hbase(res)
                 domains.append(res.meta[b"domain"][b'netloc'])
                 self.new_links_count += 1
             except Exception as e:
