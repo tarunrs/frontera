@@ -157,7 +157,7 @@ class SitemapsParser(object):
         self._sitemap_urls = list()
         self.manager = Manager()
         logging.basicConfig(filename=logfolder + logfile, level=logging.INFO,
-                            format='%(asctime)s %(message)s')
+                            format='%(asctime)s %(levelname)s %(module)s %(funcName)s %(lineno)d %(message)s')
         logging.getLogger("elasticsearch_dsl").setLevel(logging.ERROR)
         logging.getLogger("newspaper").setLevel(logging.WARNING)
         logging.getLogger("requests").setLevel(logging.WARNING)

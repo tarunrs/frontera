@@ -40,7 +40,7 @@ class FeedsParser:
     def __init__(self, logfile):
         self.manager = Manager()
         logging.basicConfig(filename=logfile, level=logging.INFO,
-                            format='%(asctime)s %(message)s')
+                            format='%(asctime)s %(levelname)s %(module)s %(funcName)s %(lineno)d %(message)s')
         logging.getLogger("elasticsearch_dsl").setLevel(logging.WARNING)
         logging.getLogger("newspaper").setLevel(logging.WARNING)
         logging.getLogger("requests").setLevel(logging.WARNING)
@@ -74,7 +74,6 @@ class FeedsParser:
             host=hb_host, port=hb_port, timeout=hb_timeout)
         self.hb_table = self.hb_connection.table("crawler:metadata")
 
-
     def load_url_cache(self, partition_num):
         try:
             self.logger.info(
@@ -107,7 +106,6 @@ class FeedsParser:
             time.sleep(30)
             self.establish_hbase_connection()
             self.index_in_hbase(response)
-
 
     def already_indexed(self, response):
         try:
