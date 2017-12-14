@@ -289,8 +289,9 @@ class SitemapsParser(object):
         for url in self._sitemap_urls[start_index:end_index]:
             try:
                 self._parse(url)
-            except:
-                self.logger.error("Error while parsing: %s", url)
+            except Exception as e:
+                self.logger.exception(
+                    "Error while parsing: %s %s", url, str(e))
             self.logger.info("Found %s links, %s new", str(
                 self.total_links_count), str(self.new_links_count))
             self.global_total_links_count += self.total_links_count
