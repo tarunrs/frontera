@@ -85,7 +85,7 @@ class FeedsParser:
             self.logger.info("Using URL cache")
         except Exception as e:
             self.use_url_cache = False
-            self.logger.error(str(e))
+            self.logger.exception(str(e))
             self.logger.info(
                 "URL cache could not be loaded. Using elasticsearch index")
 
@@ -101,7 +101,7 @@ class FeedsParser:
         try:
             self.hb_table.put(unhexlify(response.meta[b'fingerprint']), obj)
         except Exception as e:
-            self.logger.error(str(e))
+            self.logger.exception(str(e))
             self.logger.info("Retrying in 30 seconds")
             time.sleep(30)
             self.establish_hbase_connection()
@@ -140,17 +140,17 @@ class FeedsParser:
                         res.meta[b"published_date"] = datetime.fromtimestamp(
                             mktime(item["published_parsed"]))
                 except Exception as e:
-                    self.logger.error(e)
+                    self.logger.exception(e)
                 res = self.ede.add_details(res)
                 try:
                     self.index_in_hbase(res)
                 except Exception as e:
-                    self.logger.error(str(e))
+                    self.logger.exception(str(e))
                 self.esi.add_to_index(res)
                 domains.append(res.meta[b"domain"][b'netloc'])
                 self.new_links_count += 1
             except Exception as e:
-                self.logger.error(e)
+                self.logger.exception(e)
         domains = list(set(domains))
         return domains
 
@@ -170,7 +170,7 @@ class FeedsParser:
             try:
                 domains += self._parse(feed)
             except Exception as e:
-                self.logger.error(str(e) + ": " + feed)
+                self.logger.exception(str(e) + ": " + feed)
         domains = list(set(domains))
         f = open("domains.csv", "ab")
         s = "\n".join(domains)

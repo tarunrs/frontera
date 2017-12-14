@@ -204,7 +204,7 @@ class SitemapsParser(object):
             self.logger.info("Using URL cache")
         except Exception as e:
             self.use_url_cache = False
-            self.logger.error(str(e))
+            self.logger.exception(str(e))
             self.logger.info(
                 "URL cache could not be loaded. Using elasticsearch index")
 
@@ -220,7 +220,7 @@ class SitemapsParser(object):
         try:
             self.hb_table.put(unhexlify(response.meta[b'fingerprint']), obj)
         except Exception as e:
-            self.logger.error(str(e))
+            self.logger.exception(str(e))
             self.logger.info("Retrying in 30 seconds")
             time.sleep(30)
             self.establish_hbase_connection()
@@ -262,19 +262,17 @@ class SitemapsParser(object):
                     if item.get("image") and item["image"].get("loc"):
                         res.meta[b"image"] = item["image"]["loc"]
                 except Exception as e:
-                    self.logger.error(str(e) + " : " + res.url)
+                    self.logger.exception(str(e) + " : " + res.url)
                 res = self.ede.add_details(res)
                 try:
                     self.index_in_hbase(res)
                 except Exception as e:
-                    self.logger.error(
+                    self.logger.exception(
                         "Error while indexing in HBase: %s, %s", res.url, str(e))
                 self.esi.add_to_index(res)
                 self.new_links_count += 1
             except Exception as e:
-                self.logger.error(str(e) + " : " + url)
-                self.logger.error(str(e) + " : " + item["loc"])
-
+                self.logger.exception(str(e) + " : " + url + " " + item["loc"])
         return
 
     def parse(self, partition_num, total_partitions):
