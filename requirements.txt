@@ -1,2 +1,3 @@
 six>=1.8.0
 w3lib>=1.15.0
+boilerpipe==1.2.0.0
