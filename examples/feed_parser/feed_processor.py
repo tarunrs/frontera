@@ -1,5 +1,5 @@
 import feedparser
-from time import mktime
+from time import mktime, sleep
 from datetime import datetime
 from frontera.utils.fingerprint import hostname_local_fingerprint, sha1
 from frontera.core.components import States
@@ -15,7 +15,6 @@ import sys
 import logging
 import pickle
 import os
-import time
 
 
 class Manager:
@@ -103,13 +102,12 @@ class FeedsParser:
         except Exception as e:
             self.logger.exception(str(e))
             self.logger.info("Retrying in 30 seconds")
-            time.sleep(30)
+            sleep(30)
             self.establish_hbase_connection()
             self.index_in_hbase(response)
 
     def already_indexed(self, response):
         try:
-            self.url_hash_cache[response.meta[b"fingerprint"]] = True
             if self.use_url_cache:
                 if self.prev_url_hash_cache.get(response.meta[b'fingerprint']) is not None:
                     return True
@@ -121,22 +119,27 @@ class FeedsParser:
         except:
             return False
 
+    def update_cache(self, response):
+        self.url_hash_cache[response.meta[b"fingerprint"]] = True
+
     def _parse(self, feed):
         doc = feedparser.parse(feed)
-        domains = []
         self.total_links_count += len(doc["items"])
         self.logger.info("Parsing: %s, Found: %s",
                          feed, str(len(doc["items"])))
+        links_count = len(doc["items"])
+        new_links = 0
         for item in doc["items"]:
             try:
                 res = Response(item["link"])
                 res = self.de.add_domain(res)
                 res.meta[b"fingerprint"] = hostname_local_fingerprint(res.url)
                 if self.already_indexed(res):
+                    self.update_cache(res)
                     continue
                 res = self.nde.add_details(res, None)
                 try:
-                    if res.meta[b"published_date"] is None:
+                    if res.meta[b"published_date"] is None and item.get("published_parsed") is not None:
                         res.meta[b"published_date"] = datetime.fromtimestamp(
                             mktime(item["published_parsed"]))
                 except Exception as e:
@@ -147,18 +150,18 @@ class FeedsParser:
                 except Exception as e:
                     self.logger.exception(str(e))
                 self.esi.add_to_index(res)
-                domains.append(res.meta[b"domain"][b'netloc'])
+                self.update_cache(res)
+                new_links += 1
                 self.new_links_count += 1
             except Exception as e:
                 self.logger.exception(e)
-        domains = list(set(domains))
-        return domains
+        self.logger.info("Found %s links, %s new", str(links_count), str(new_links))
+        return
 
     def parse(self, partition_num, total_partitions):
         self.logger.info("Parsing partition %s of %s", str(
             partition_num), str(total_partitions))
         self.load_url_cache(partition_num)
-        domains = []
         num_feeds = len(self.feeds)
         partition_size = num_feeds / total_partitions
         start_index = partition_num * partition_size
@@ -168,16 +171,9 @@ class FeedsParser:
             end_index = start_index + partition_size
         for feed in self.feeds[start_index:end_index]:
             try:
-                domains += self._parse(feed)
+                self._parse(feed)
             except Exception as e:
                 self.logger.exception(str(e) + ": " + feed)
-        domains = list(set(domains))
-        f = open("domains.csv", "ab")
-        s = "\n".join(domains)
-        s = s + "\n"
-        s = s.encode("utf-8")
-        f.write(s)
-        f.close()
         self.logger.info("Found %s total links, %s new", str(
             self.total_links_count), str(self.new_links_count))
         filename = self.manager.settings.get(
@@ -194,8 +190,7 @@ if __name__ == "__main__":
     if int(sys.argv[2]) >= int(sys.argv[1]):
         print " [ERROR] partition_number cannot be more than total_partitions"
         sys.exit()
-    while True:
-        total_partitions = int(sys.argv[1])
-        partition_num = int(sys.argv[2])
-        f = FeedsParser(sys.argv[3])
-        f.parse(partition_num, total_partitions)
+    total_partitions = int(sys.argv[1])
+    partition_num = int(sys.argv[2])
+    f = FeedsParser(sys.argv[3])
+    f.parse(partition_num, total_partitions)
