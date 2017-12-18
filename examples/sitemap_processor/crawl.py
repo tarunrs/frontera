@@ -228,7 +228,6 @@ class SitemapsParser(object):
 
     def already_indexed(self, response):
         try:
-            self.url_hash_cache[response.meta[b"fingerprint"]] = True
             if self.use_url_cache:
                 if self.prev_url_hash_cache.get(response.meta[b'fingerprint']) is not None:
                     return True
@@ -239,6 +238,11 @@ class SitemapsParser(object):
             return True
         except:
             return False
+
+
+    def update_cache(self, response):
+        self.url_hash_cache[response.meta[b"fingerprint"]] = True
+
 
     def _parse(self, url):
         self.logger.info("Parsing: %s", url)
@@ -251,6 +255,7 @@ class SitemapsParser(object):
                 res = self.de.add_domain(res)
                 res.meta[b"fingerprint"] = hostname_local_fingerprint(res.url)
                 if self.already_indexed(res):
+                    self.update_cache(res)
                     continue
                 res = self.nde.add_details(res, None)
                 try:
@@ -270,6 +275,7 @@ class SitemapsParser(object):
                     self.logger.exception(
                         "Error while indexing in HBase: %s, %s", res.url, str(e))
                 self.esi.add_to_index(res)
+                self.update_cache(res)
                 self.new_links_count += 1
             except Exception as e:
                 self.logger.exception(str(e) + " : " + url + " " + item["loc"])
