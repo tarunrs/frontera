@@ -88,8 +88,11 @@ class NewsDetailsExtractMiddleware(BaseExtractMiddleware):
         obj.meta[b"html"] = a.html
         obj.meta[b"published_date"] = a.publish_date
         if obj.meta[b"published_date"] is None:
-            obj.meta[b"published_date"] = articleDateExtractor.extractArticlePublishedDate(
-                obj.url, obj.body)
+            try:
+                obj.meta[b"published_date"] = articleDateExtractor.extractArticlePublishedDate(
+                    obj.url, obj.body)
+            except:
+                pass
         obj.meta[b"crawled_date"] = datetime.datetime.now()
         obj.meta[b"image"] = a.top_image
         obj.meta[b"authors"] = a.authors

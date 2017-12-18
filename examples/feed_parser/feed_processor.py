@@ -154,7 +154,11 @@ class FeedsParser:
                 new_links += 1
                 self.new_links_count += 1
             except Exception as e:
-                self.logger.exception(e)
+                if item.get("link"):
+                    self.logger.error("Error parsing:" + item["link"])
+                    self.logger.exception(e)
+                else:
+                    self.logger.exception(e)
         self.logger.info("Found %s links, %s new", str(links_count), str(new_links))
         return
 
