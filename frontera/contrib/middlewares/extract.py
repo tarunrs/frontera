@@ -1,13 +1,14 @@
 from __future__ import absolute_import
 from frontera.core.components import Middleware
 from boilerpipe.extract import Extractor
-import articleDateExtractor
 from frontera.utils.misc import get_crc32
 import datetime
 import nltk
 from newspaper import Article
 from nltk.stem.snowball import SnowballStemmer
 import pickle
+import spacy
+from collections import defaultdict
 
 
 class BaseExtractMiddleware(Middleware):
@@ -92,12 +93,6 @@ class NewsDetailsExtractMiddleware(BaseExtractMiddleware):
         obj.meta[b"title"] = a.title
         obj.meta[b"html"] = a.html
         obj.meta[b"published_date"] = a.publish_date
-        if obj.meta[b"published_date"] is None:
-            try:
-                obj.meta[b"published_date"] = articleDateExtractor.extractArticlePublishedDate(
-                    obj.url, obj.body)
-            except:
-                pass
         obj.meta[b"crawled_date"] = datetime.datetime.now()
         obj.meta[b"image"] = a.top_image
         obj.meta[b"authors"] = a.authors
@@ -118,6 +113,7 @@ class EntityDetailsExtractMiddleware(BaseExtractMiddleware):
 
     component_name = 'Entity Details Extract Middleware'
     stemmer = SnowballStemmer("english")
+    s_nlp = spacy.load("en_core_web_sm")
 
     def _extract_entity_names(self, t):
         entity_names = []
@@ -144,19 +140,48 @@ class EntityDetailsExtractMiddleware(BaseExtractMiddleware):
             ret_sentences.append(self.stem_sentence(sentence))
         return ret_sentences
 
+    def extract_named_entities_using_spacy(self, sentences):
+        nes = defaultdict(list)
+        for s in sentences:
+            if type(s) == str:
+                # Ignore errors even if the string is not proper UTF-8 or has
+                # broken marker bytes.
+                # Python built-in function unicode() can do this.
+                s = unicode(s, "utf-8", errors="ignore")
+            else:
+                # Assume the value object has proper __unicode__() method
+                s = unicode(s)
+            doc = self.s_nlp(s)
+            spans = list(doc.ents) + list(doc.noun_chunks)
+            for span in spans:
+                span.merge()
+            for e in doc.ents:
+                if e.text.isupper():
+                    nes[e.label_].append(e.text.strip())
+                else:
+                    nes[e.label_].append(e.text.lower().strip())
+            for key in nes:
+                nes[key] = list(set(nes[key]))
+        return nes
+
     def _add_details(self, obj):
         sentences = nltk.sent_tokenize(obj.meta[b"text"])
         tokenized_sentences = [nltk.word_tokenize(
             sentence) for sentence in sentences]
-        tagged_sentences = [nltk.pos_tag(sentence)
-                            for sentence in tokenized_sentences]
         stemmed_sentences = self.stem_sentences(tokenized_sentences)
-        chunked_sentences = nltk.ne_chunk_sents(tagged_sentences, binary=True)
-        entity_names = []
-        for tree in chunked_sentences:
-            entity_names.extend(self._extract_entity_names(tree))
-        entity_names = [entity.lower() for entity in entity_names]
-        entity_names = list(set(entity_names))
-        obj.meta[b"named_entities"] = entity_names
+        if obj.meta[b"language"] == "en":
+            obj.meta[b"named_entities"] = self.extract_named_entities_using_spacy(
+                sentences)
+        else:
+            tagged_sentences = [nltk.pos_tag(sentence)
+                                for sentence in tokenized_sentences]
+            chunked_sentences = nltk.ne_chunk_sents(
+                tagged_sentences, binary=True)
+            entity_names = []
+            for tree in chunked_sentences:
+                entity_names.extend(self._extract_entity_names(tree))
+            entity_names = [entity.lower() for entity in entity_names]
+            entity_names = list(set(entity_names))
+            obj.meta[b"named_entities"] = entity_names
         obj.meta[b"stemmed_sentences"] = stemmed_sentences
         return obj
