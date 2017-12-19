@@ -77,9 +77,14 @@ class NewsDetailsExtractMiddleware(BaseExtractMiddleware):
         language = self.get_language(domain)
         location = self.get_locations(domain)
         a = Article(obj.url, language=language)
+        if html is not None and len(html.strip()) == 0:
+            html = None
         a.download(html=html)
         a.parse()
-        extractor = Extractor(extractor='ArticleExtractor', html=a.html)
+        if a.html is None or (a.html is not None and len(a.html) == 0):
+            extractor = Extractor(extractor='ArticleExtractor', url=obj.url)
+        else:
+            extractor = Extractor(extractor='ArticleExtractor', html=a.html)
         obj.meta[b"text"] = extractor.getText()
         if len(a.text) > len(obj.meta[b"text"]):
             obj.meta[b"text"] = a.text
