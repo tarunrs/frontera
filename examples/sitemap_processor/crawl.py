@@ -114,8 +114,11 @@ class SitemapParser(object):
                                 data[tag][
                                     sub_tag] = sub_param.text.strip(" \n")
                                 if sub_tag == "publication_date" and data[tag][sub_tag] and len(data[tag][sub_tag]) > 0:
-                                    data[tag][sub_tag] = dateutil.parser.parse(
-                                        data[tag][sub_tag])
+                                    try:
+                                        data[tag][sub_tag] = dateutil.parser.parse(
+                                            data[tag][sub_tag])
+                                    except:
+                                        data[tag][sub_tag] = None
                     else:
                         data[tag] = param.text
                 yield data
@@ -300,11 +303,12 @@ class SitemapsParser(object):
             except Exception as e:
                 self.logger.exception(
                     "Error while parsing: %s %s", url, str(e))
-            self.logger.info("Found %s links, %s new", str(
-                self.total_links_count), str(self.new_links_count))
+            self.logger.info("(%d/%d) Found %d links, %d new", idx + 1, end_index - start_index,
+                             self.total_links_count, self.new_links_count)
             self.global_total_links_count += self.total_links_count
             self.global_new_links_count += self.new_links_count
-        self.logger.info("(%d/%d) Found %d total links, %d new", idx, end_index - start_index,
+
+        self.logger.info("Found %d total links, %d new",
                          self.global_total_links_count, self.global_new_links_count)
         filename = self.manager.settings.get(
             "CACHE_LOCATION") + "url_cache_" + str(partition_num) + ".pkl"

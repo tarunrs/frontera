@@ -180,7 +180,7 @@ class FeedsParser:
         for idx, feed in enumerate(urls_to_process):
             try:
                 self._parse(feed)
-                self.logger.info("Processed %d of %d", idx,
+                self.logger.info("Processed %d of %d", idx + 1,
                                  end_index - start_index)
             except Exception as e:
                 self.logger.exception(str(e) + ": " + feed)
