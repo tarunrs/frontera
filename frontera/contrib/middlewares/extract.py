@@ -89,6 +89,8 @@ class NewsDetailsExtractMiddleware(BaseExtractMiddleware):
         obj.meta[b"text"] = extractor.getText()
         if len(a.text) > len(obj.meta[b"text"]):
             obj.meta[b"text"] = a.text
+        if domain == "www.wsj.com":
+            obj.meta[b"text"] = a.text
         obj.meta[b"content_hash"] = get_crc32(obj.meta[b"text"])
         obj.meta[b"title"] = a.title
         obj.meta[b"html"] = a.html
