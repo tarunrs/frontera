@@ -26,6 +26,7 @@ import happybase
 import sys
 import logging
 import pickle
+from random import shuffle
 
 logfolder = "/home/cia/bitbucket/frontera/examples/sitemap_processor/"
 configfile = "/home/cia/bitbucket/frontera/examples/sitemap_processor/config.yaml"
@@ -239,10 +240,8 @@ class SitemapsParser(object):
         except:
             return False
 
-
     def update_cache(self, response):
         self.url_hash_cache[response.meta[b"fingerprint"]] = True
-
 
     def _parse(self, url):
         self.logger.info("Parsing: %s", url)
@@ -292,7 +291,10 @@ class SitemapsParser(object):
             end_index = num_feeds
         else:
             end_index = start_index + partition_size
-        for url in self._sitemap_urls[start_index:end_index]:
+        urls_to_process = self._sitemap_urls[start_index:end_index]
+        shuffle(urls_to_process)
+
+        for idx, url in enumerate(urls_to_process):
             try:
                 self._parse(url)
             except Exception as e:
@@ -302,8 +304,8 @@ class SitemapsParser(object):
                 self.total_links_count), str(self.new_links_count))
             self.global_total_links_count += self.total_links_count
             self.global_new_links_count += self.new_links_count
-        self.logger.info("Found %s total links, %s new", str(
-            self.global_total_links_count), str(self.global_new_links_count))
+        self.logger.info("(%d/%d) Found %d total links, %d new", idx, end_index - start_index,
+                         self.global_total_links_count, self.global_new_links_count)
         filename = self.manager.settings.get(
             "CACHE_LOCATION") + "url_cache_" + str(partition_num) + ".pkl"
         self.logger.info("Dumping URL cache: " + filename)

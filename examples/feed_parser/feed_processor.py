@@ -15,6 +15,7 @@ import sys
 import logging
 import pickle
 import os
+from random import shuffle
 
 
 class Manager:
@@ -159,7 +160,8 @@ class FeedsParser:
                     self.logger.exception(e)
                 else:
                     self.logger.exception(e)
-        self.logger.info("Found %s links, %s new", str(links_count), str(new_links))
+        self.logger.info("Found %s links, %s new",
+                         str(links_count), str(new_links))
         return
 
     def parse(self, partition_num, total_partitions):
@@ -173,9 +175,13 @@ class FeedsParser:
             end_index = num_feeds
         else:
             end_index = start_index + partition_size
-        for feed in self.feeds[start_index:end_index]:
+        urls_to_process = self.feeds[start_index:end_index]
+        shuffle(urls_to_process)
+        for idx, feed in enumerate(urls_to_process):
             try:
                 self._parse(feed)
+                self.logger.info("Processed %d of %d", idx,
+                                 end_index - start_index)
             except Exception as e:
                 self.logger.exception(str(e) + ": " + feed)
         self.logger.info("Found %s total links, %s new", str(
