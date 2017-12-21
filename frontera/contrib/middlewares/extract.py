@@ -144,6 +144,11 @@ class EntityDetailsExtractMiddleware(BaseExtractMiddleware):
 
     def extract_named_entities_using_spacy(self, sentences):
         nes = defaultdict(list)
+        temp_sentences = []
+        for s in sentences:
+            temp = s.split("\n")
+            temp_sentences += temp
+        sentences = temp_sentences
         for s in sentences:
             if type(s) == str:
                 # Ignore errors even if the string is not proper UTF-8 or has
@@ -164,6 +169,7 @@ class EntityDetailsExtractMiddleware(BaseExtractMiddleware):
                     nes[e.label_].append(e.text.lower().strip())
             for key in nes:
                 nes[key] = list(set(nes[key]))
+                nes[key] = [el for el in nes[key] if len(el) > 0]
         return nes
 
     def _add_details(self, obj):
