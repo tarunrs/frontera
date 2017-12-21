@@ -163,13 +163,10 @@ class EntityDetailsExtractMiddleware(BaseExtractMiddleware):
             for span in spans:
                 span.merge()
             for e in doc.ents:
-                if e.text.isupper():
-                    nes[e.label_].append(e.text.strip())
-                else:
-                    nes[e.label_].append(e.text.lower().strip())
+                nes[e.label_].append(e.text.lower().strip())
             for key in nes:
                 nes[key] = list(set(nes[key]))
-                nes[key] = [el for el in nes[key] if len(el) > 0]
+                nes[key] = [el for el in nes[key] if len(el) > 1]
         return nes
 
     def _add_details(self, obj):
@@ -177,19 +174,19 @@ class EntityDetailsExtractMiddleware(BaseExtractMiddleware):
         tokenized_sentences = [nltk.word_tokenize(
             sentence) for sentence in sentences]
         stemmed_sentences = self.stem_sentences(tokenized_sentences)
+        obj.meta[b"named_entities"] = defaultdict(list)
         if obj.meta[b"language"] == "en":
-            obj.meta[b"named_entities"] = self.extract_named_entities_using_spacy(
-                sentences)
-        else:
-            tagged_sentences = [nltk.pos_tag(sentence)
-                                for sentence in tokenized_sentences]
-            chunked_sentences = nltk.ne_chunk_sents(
-                tagged_sentences, binary=True)
-            entity_names = []
-            for tree in chunked_sentences:
-                entity_names.extend(self._extract_entity_names(tree))
-            entity_names = [entity.lower() for entity in entity_names]
-            entity_names = list(set(entity_names))
-            obj.meta[b"named_entities"] = entity_names
+            obj.meta[b"named_entities"] = self.extract_named_entities_using_spacy([obj.meta[b"text"]])
+        
+        tagged_sentences = [nltk.pos_tag(sentence)
+                            for sentence in tokenized_sentences]
+        chunked_sentences = nltk.ne_chunk_sents(
+            tagged_sentences, binary=True)
+        entity_names = []
+        for tree in chunked_sentences:
+            entity_names.extend(self._extract_entity_names(tree))
+        entity_names = [entity.lower() for entity in entity_names]
+        entity_names = list(set(entity_names))
+        obj.meta[b"named_entities"]["nltk"] = entity_names
         obj.meta[b"stemmed_sentences"] = stemmed_sentences
         return obj

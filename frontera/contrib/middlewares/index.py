@@ -19,6 +19,7 @@ class NewsArticle(DocType):
     stemmed_sentences = Keyword(index='not_analyzed', multi=True)
     location = Keyword(index='not_analyzed', multi=True)
     language = Keyword(index='not_analyzed')
+    ne_all = Keyword(index='not_analyzed', multi=True)
     ne_person = Keyword(index='not_analyzed', multi=True)
     ne_norp = Keyword(index='not_analyzed', multi=True)
     ne_facility = Keyword(index='not_analyzed', multi=True)
@@ -165,7 +166,8 @@ class ElasticSearchIndexMiddleware(BaseIndexMiddleware):
                     article.ne_cardinal = named_entities[ne_type]
                 if ne_type not in exclude_ne_type:
                     all_entities += named_entities[ne_type]
-            article.named_entities = list(set(all_entities))
+            article.ne_all = list(set(all_entities))
+            article.named_entities = named_entities["nltk"]
 
     def add_to_index(self, obj):
         return self._add_to_index(obj)
